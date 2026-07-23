@@ -1,0 +1,181 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { formatPrice } from "@/lib/format";
+import { PaymentMethodLabel } from "@/lib/constants";
+import StatusControl from "./StatusControl";
+
+export const dynamic = "force-dynamic";
+
+export default async function OrderDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      store: true,
+      phoneModel: true,
+      pickupPoint: true,
+      addons: { include: { product: true } },
+    },
+  });
+  if (!order) notFound();
+
+  return (
+    <div>
+      <Link href="/admin" className="text-sm text-indigo-600">
+        ← Sifarişlərə qayıt
+      </Link>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-mono text-xl font-bold text-gray-900">
+          {order.orderNumber}
+        </h1>
+        <StatusControl orderId={order.id} current={order.status} />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Dizayn */}
+        <div className="lg:col-span-1">
+          <p className="mb-2 text-sm font-medium text-gray-700">Dizayn</p>
+          {order.designImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={order.designImage}
+              alt="Dizayn"
+              className="w-full rounded-xl border border-gray-200"
+            />
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
+              Şəkil yoxdur
+            </div>
+          )}
+          {order.uploadedImage && (
+            <div className="mt-3">
+              <p className="mb-1 text-xs text-gray-500">Yüklənən orijinal</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={order.uploadedImage}
+                alt="Orijinal"
+                className="w-32 rounded-lg border border-gray-200"
+              />
+            </div>
+          )}
+          {order.customText && (
+            <p className="mt-3 text-sm text-gray-600">
+              Mətn: <span className="font-medium">{order.customText}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Detallar */}
+        <div className="space-y-6 lg:col-span-2">
+          <Section title="Müştəri">
+            <Info label="Ad" value={order.customerName} />
+            <Info label="Telefon" value={order.customerPhone} />
+            {order.customerEmail && (
+              <Info label="Email" value={order.customerEmail} />
+            )}
+            {order.shippingAddress && (
+              <Info label="Ünvan" value={order.shippingAddress} />
+            )}
+          </Section>
+
+          <Section title="Çatdırılma">
+            <Info
+              label="Pickup"
+              value={
+                order.pickupPoint
+                  ? `${order.pickupPoint.name} — ${order.pickupPoint.address}`
+                  : "—"
+              }
+            />
+            <Info
+              label="Ödəniş üsulu"
+              value={PaymentMethodLabel[order.paymentMethod] ?? order.paymentMethod}
+            />
+          </Section>
+
+          <Section title="Mağaza (komissiya)">
+            <Info label="Mağaza" value={order.store.name} />
+            <Info
+              label="Komissiya nisbəti"
+              value={`${(order.commissionRate * 100).toFixed(0)}%`}
+            />
+            <Info
+              label="Komissiya məbləği"
+              value={formatPrice(order.commissionAmount)}
+            />
+          </Section>
+
+          <Section title="Məhsullar">
+            <div className="text-sm">
+              <Line
+                label={`Kabro — ${order.phoneModel.name}`}
+                value={formatPrice(order.casePrice)}
+              />
+              {order.addons.map((a) => (
+                <Line
+                  key={a.id}
+                  label={`${a.product.name} × ${a.quantity}`}
+                  value={formatPrice(a.unitPrice * a.quantity)}
+                />
+              ))}
+              <Line label="Çatdırılma" value={formatPrice(order.shippingFee)} />
+              <div className="my-2 border-t border-gray-200" />
+              <Line label="Cəmi" value={formatPrice(order.total)} bold />
+            </div>
+          </Section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <h2 className="mb-3 text-sm font-semibold text-gray-900">{title}</h2>
+      <div className="space-y-1.5">{children}</div>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="w-36 shrink-0 text-gray-500">{label}</span>
+      <span className="text-gray-900">{value}</span>
+    </div>
+  );
+}
+
+function Line({
+  label,
+  value,
+  bold,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+}) {
+  return (
+    <div
+      className={`flex justify-between py-1 ${
+        bold ? "font-bold text-gray-900" : "text-gray-600"
+      }`}
+    >
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}

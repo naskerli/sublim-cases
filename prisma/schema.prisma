@@ -1,0 +1,137 @@
+// Sublim Cases — özəl sifariş telefon kabro platforması
+// Verilənlər bazası sxemi. Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Aksesuar mağazası — vitrinində QR kod yerləşdirilir.
+// slug QR koda daxil edilir: https://.../s/<slug>
+// Komissiya izləmək üçün hər sifariş öz mağazasına bağlanır.
+model Store {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  city           String?
+  address        String?
+  contactName    String?
+  contactPhone   String?
+  contactEmail   String?
+  // Mağazaya ödəniləcək komissiya nisbəti (0.15 = 15%)
+  commissionRate Float    @default(0.15)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orders Order[]
+}
+
+// Telefon modeli — kabro şablonu (canvas overlay) burada saxlanılır.
+model PhoneModel {
+  id            String  @id @default(cuid())
+  brand         String
+  name          String
+  slug          String  @unique
+  // Kabro şablonu şəkli (canvas-da alt fon kimi istifadə olunur)
+  templateImage String?
+  // Çap sahəsinin şablon üzərindəki koordinatları (JSON: {x,y,w,h,radius})
+  printArea     String?
+  active        Boolean @default(true)
+  sortOrder     Int     @default(0)
+
+  orders Order[]
+}
+
+// Məhsul: əsas kabro (CASE) və ya cross-sell aksesuar (ADDON: keychain və s.)
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  // "CASE" | "ADDON"
+  type        String  @default("ADDON")
+  description String?
+  image       String?
+  price       Float
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  orderAddons OrderAddon[]
+}
+
+// Kargo pickup məntəqəsi (ilkin seed; sonra kargo API-si ilə əvəzlənəcək).
+model PickupPoint {
+  id      String  @id @default(cuid())
+  code    String  @unique
+  name    String
+  city    String
+  address String
+  lat     Float?
+  lng     Float?
+  active  Boolean @default(true)
+
+  orders Order[]
+}
+
+// Müştəri sifarişi.
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  // Attribution — komissiya üçün hansı mağazadan gəldiyi
+  store   Store  @relation(fields: [storeId], references: [id])
+  storeId String
+
+  phoneModel   PhoneModel @relation(fields: [phoneModelId], references: [id])
+  phoneModelId String
+
+  // Dizayn: yüklənən şəkil və AI/canvas ilə hazırlanan yekun mockup
+  uploadedImage String?
+  designImage   String? // yekun kompozit (kabro üzərində)
+  customText    String?
+  textOptions   String? // JSON: {font, color, size, x, y, rotation}
+
+  // Qiymətlər (sifariş anındakı snapshot)
+  casePrice        Float
+  addonsTotal      Float @default(0)
+  shippingFee      Float @default(0)
+  total            Float
+  commissionRate   Float // snapshot
+  commissionAmount Float
+
+  // Müştəri əlaqə + çatdırılma
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  shippingAddress String?
+
+  pickupPoint   PickupPoint? @relation(fields: [pickupPointId], references: [id])
+  pickupPointId String?
+
+  // "CARD" | "CASH_ON_DELIVERY"
+  paymentMethod String @default("CASH_ON_DELIVERY")
+  // "PENDING" | "PAID" | "FAILED" | "REFUNDED"
+  paymentStatus String @default("PENDING")
+  // "PENDING" | "PAID" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED"
+  status        String @default("PENDING")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addons OrderAddon[]
+}
+
+// Sifarişə əlavə edilən cross-sell məhsullar (qiymət snapshot ilə).
+model OrderAddon {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int     @default(1)
+  unitPrice Float
+}
