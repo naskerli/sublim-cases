@@ -33,7 +33,7 @@ export default function StatusControl({
         value={status}
         onChange={(e) => update(e.target.value)}
         disabled={saving}
-        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm sm:w-auto sm:py-2"
       >
         {Object.values(OrderStatus).map((s) => (
           <option key={s} value={s}>
@@ -41,7 +41,9 @@ export default function StatusControl({
           </option>
         ))}
       </select>
-      {saving && <span className="text-xs text-gray-400">Saxlanılır…</span>}
+      {saving && (
+        <span className="shrink-0 text-xs text-gray-400">Saxlanılır…</span>
+      )}
     </div>
   );
 }

@@ -30,8 +30,8 @@ export default async function OrderDetailPage({
         ← Sifarişlərə qayıt
       </Link>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-mono text-xl font-bold text-gray-900">
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <h1 className="font-mono text-lg font-bold text-gray-900 sm:text-xl">
           {order.orderNumber}
         </h1>
         <StatusControl orderId={order.id} current={order.status} />
@@ -153,8 +153,8 @@ function Section({
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2 text-sm">
-      <span className="w-36 shrink-0 text-gray-500">{label}</span>
-      <span className="text-gray-900">{value}</span>
+      <span className="w-28 shrink-0 text-gray-500 sm:w-36">{label}</span>
+      <span className="break-words text-gray-900">{value}</span>
     </div>
   );
 }

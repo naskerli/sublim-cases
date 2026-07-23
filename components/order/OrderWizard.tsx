@@ -198,7 +198,7 @@ export default function OrderWizard({
   const shape = selectedModel?.shape;
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-28 pt-6">
+    <div className="mx-auto max-w-lg px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Başlıq */}
       <div className="mb-6 text-center">
         <p className="text-xs uppercase tracking-wider text-indigo-500">
@@ -208,7 +208,7 @@ export default function OrderWizard({
       </div>
 
       {/* Addım göstəricisi */}
-      <div className="mb-6 flex items-center justify-between gap-1">
+      <div className="mb-2 flex items-center justify-between gap-1">
         {STEPS.map((s, i) => (
           <div key={s} className="flex-1">
             <div
@@ -217,7 +217,7 @@ export default function OrderWizard({
               }`}
             />
             <p
-              className={`mt-1 text-[10px] ${
+              className={`mt-1 hidden text-[10px] sm:block ${
                 i === step ? "font-semibold text-indigo-600" : "text-gray-400"
               }`}
             >
@@ -226,6 +226,9 @@ export default function OrderWizard({
           </div>
         ))}
       </div>
+      <p className="mb-6 text-center text-xs font-semibold text-indigo-600 sm:hidden">
+        {STEPS[step]}
+      </p>
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -248,10 +251,10 @@ export default function OrderWizard({
                     setBrand(b);
                     setModelId("");
                   }}
-                  className={`rounded-full px-4 py-1.5 text-sm ${
+                  className={`rounded-full px-4 py-2 text-sm ${
                     brand === b
                       ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700"
+                      : "bg-gray-100 text-gray-700 active:bg-gray-200"
                   }`}
                 >
                   {b}
@@ -370,7 +373,7 @@ export default function OrderWizard({
                 <button
                   key={c}
                   onClick={() => setText((t) => ({ ...t, color: c }))}
-                  className={`h-7 w-7 rounded-full border-2 ${
+                  className={`h-9 w-9 rounded-full border-2 ${
                     text.color === c ? "border-indigo-500" : "border-gray-200"
                   }`}
                   style={{ background: c }}
@@ -615,12 +618,12 @@ export default function OrderWizard({
       )}
 
       {/* Naviqasiya (sabit alt panel) */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white/95 px-4 pt-3 backdrop-blur pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           {step > 0 && (
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700"
+              className="rounded-lg border border-gray-300 px-5 py-3 text-sm font-medium text-gray-700 active:bg-gray-50"
             >
               Geri
             </button>
@@ -632,7 +635,7 @@ export default function OrderWizard({
             <button
               disabled={!canNext()}
               onClick={() => setStep((s) => s + 1)}
-              className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+              className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
             >
               Növbəti
             </button>
@@ -640,7 +643,7 @@ export default function OrderWizard({
             <button
               disabled={submitting}
               onClick={submitOrder}
-              className="rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
             >
               {submitting ? "Göndərilir…" : "Sifarişi tamamla"}
             </button>
@@ -695,14 +698,14 @@ function QtyStepper({
     <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(Math.max(0, value - 1))}
-        className="h-8 w-8 rounded-full bg-gray-200 text-lg leading-none text-gray-700"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200 text-lg leading-none text-gray-700 active:bg-gray-300"
       >
         −
       </button>
       <span className="w-5 text-center text-sm font-medium">{value}</span>
       <button
         onClick={() => onChange(value + 1)}
-        className="h-8 w-8 rounded-full bg-indigo-600 text-lg leading-none text-white"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-lg leading-none text-white active:bg-indigo-700"
       >
         +
       </button>
