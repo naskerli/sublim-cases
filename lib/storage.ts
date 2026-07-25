@@ -20,16 +20,31 @@ let bucketReady = false;
 function getSupabase(): SupabaseClient | null {
   if (cachedClient !== undefined) return cachedClient;
 
-  const url = process.env.SUPABASE_URL;
+  // Səhvən əlavə olunmuş boşluq/sonluq kəsilir — "https://x.supabase.co/"
+  // kimi dəyər sorğu yolunu pozur.
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
   // Yeni açar sistemi: "Secret key" (sb_secret_...).
   // Köhnə layihələrdə: service_role JWT. Hər ikisi dəstəklənir.
-  const key =
-    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = (
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+  )?.trim();
 
-  cachedClient =
-    url && key
-      ? createClient(url, key, { auth: { persistSession: false } })
-      : null;
+  if (!url || !key) {
+    cachedClient = null;
+    return cachedClient;
+  }
+
+  if (!/^https:\/\/[^/]+$/.test(url)) {
+    console.error(
+      `[storage] SUPABASE_URL düzgün deyil: "${url}". ` +
+        'Gözlənilən format: "https://<ref>.supabase.co" ' +
+        "(Project Settings → API → Project URL). Baza bağlantı sətri DEYİL.",
+    );
+    cachedClient = null;
+    return cachedClient;
+  }
+
+  cachedClient = createClient(url, key, { auth: { persistSession: false } });
   return cachedClient;
 }
 
@@ -37,23 +52,25 @@ export function storageConfigured(): boolean {
   return getSupabase() !== null;
 }
 
-// Bucket yoxdursa yaradır (private). Bir dəfə yoxlanılır.
+// Bucket yoxdursa yaratmağa çalışır (private).
+// Uğursuz olsa da yükləməni bloklamır — bucket artıq mövcud ola bilər,
+// yaxud açarın bucket yaratma icazəsi olmaya bilər. Həqiqi nəticəni
+// yükləmənin özü göstərəcək.
 async function ensureBucket(client: SupabaseClient): Promise<void> {
   if (bucketReady) return;
+  bucketReady = true; // hər yükləmədə təkrarlanmasın
 
-  const { error } = await client.storage.getBucket(BUCKET);
-  if (error) {
-    const { error: createError } = await client.storage.createBucket(BUCKET, {
-      public: false,
-      fileSizeLimit: MAX_BYTES,
-    });
-    // Paralel sorğular eyni anda yaratmağa cəhd edə bilər — "already exists"
-    // xətası problem deyil.
-    if (createError && !/already exists/i.test(createError.message)) {
-      throw new Error(`Storage bucket yaradıla bilmədi: ${createError.message}`);
-    }
+  const { error: createError } = await client.storage.createBucket(BUCKET, {
+    public: false,
+  });
+
+  if (createError && !/already exists|resource already/i.test(createError.message)) {
+    console.warn(
+      `[storage] "${BUCKET}" bucket-i avtomatik yaradıla bilmədi: ` +
+        `${createError.message}. Supabase → Storage bölməsindən əl ilə ` +
+        "yaradın (private).",
+    );
   }
-  bucketReady = true;
 }
 
 function parseDataUrl(
@@ -86,16 +103,27 @@ export async function saveDataUrl(
   const client = getSupabase();
 
   if (client) {
-    await ensureBucket(client);
     const key = `${prefix}/${randomUUID()}.${parsed.ext}`;
-    const { error } = await client.storage
-      .from(BUCKET)
-      .upload(key, parsed.buffer, {
+
+    const upload = () =>
+      client.storage.from(BUCKET).upload(key, parsed.buffer, {
         contentType: parsed.mime,
         upsert: false,
       });
+
+    // Əvvəlcə birbaşa yükləməyə cəhd — bucket mövcuddursa əlavə sorğu getmir.
+    let { error } = await upload();
+
+    // Bucket yoxdursa yaradıb bir dəfə təkrarla.
+    if (error && /bucket not found|not found/i.test(error.message)) {
+      await ensureBucket(client);
+      ({ error } = await upload());
+    }
+
     if (error) {
-      throw new Error(`Şəkil yüklənmədi: ${error.message}`);
+      throw new Error(
+        `Şəkil Supabase Storage-a yüklənmədi (bucket: "${BUCKET}"): ${error.message}`,
+      );
     }
     return key;
   }
