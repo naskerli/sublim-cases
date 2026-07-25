@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireStoreAdmin } from "@/lib/auth";
+import { getImageUrl } from "@/lib/storage";
 import OrderDetail from "@/components/panel/OrderDetail";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +27,16 @@ export default async function StoreOrderDetailPage({
   // Başqa mağazanın sifarişi görünməsin.
   if (!order || order.storeId !== user.storeId) notFound();
 
+  const [designImageUrl, uploadedImageUrl] = await Promise.all([
+    getImageUrl(order.designImage),
+    getImageUrl(order.uploadedImage),
+  ]);
+
   return (
     <OrderDetail
       order={order}
+      designImageUrl={designImageUrl}
+      uploadedImageUrl={uploadedImageUrl}
       backHref="/store"
       backLabel="Sifarişlərimə qayıt"
       commissionTitle="Qazancım"

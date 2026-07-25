@@ -32,15 +32,19 @@ type OrderWithRelations = {
 };
 
 // Hər iki paneldə istifadə olunur.
-// showCustomer=false olduqda müştəri əlaqə məlumatları gizlədilir.
+// Şəkil URL-ləri səhifədə imzalanıb ötürülür (Supabase Storage private-dir).
 export default function OrderDetail({
   order,
+  designImageUrl,
+  uploadedImageUrl,
   backHref,
   backLabel = "Sifarişlərə qayıt",
   commissionTitle = "Mağaza (komissiya)",
   showStoreName = true,
 }: {
   order: OrderWithRelations;
+  designImageUrl: string | null;
+  uploadedImageUrl: string | null;
   backHref: string;
   backLabel?: string;
   commissionTitle?: string;
@@ -63,24 +67,35 @@ export default function OrderDetail({
         {/* Dizayn */}
         <div className="lg:col-span-1">
           <p className="mb-2 text-sm font-medium text-gray-700">Dizayn</p>
-          {order.designImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={order.designImage}
-              alt="Dizayn"
-              className="w-full rounded-xl border border-gray-200"
-            />
+          {designImageUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={designImageUrl}
+                alt="Dizayn"
+                className="w-full rounded-xl border border-gray-200"
+              />
+              <a
+                href={designImageUrl}
+                download={`${order.orderNumber}-dizayn.jpg`}
+                className="mt-2 inline-block rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 active:bg-gray-50"
+              >
+                Çap üçün yüklə
+              </a>
+            </>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
-              Şəkil yoxdur
+              {order.designImage
+                ? "Şəkil əlçatan deyil"
+                : "Şəkil yoxdur"}
             </div>
           )}
-          {order.uploadedImage && (
+          {uploadedImageUrl && (
             <div className="mt-3">
               <p className="mb-1 text-xs text-gray-500">Yüklənən orijinal</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={order.uploadedImage}
+                src={uploadedImageUrl}
                 alt="Orijinal"
                 className="w-32 rounded-lg border border-gray-200"
               />

@@ -37,6 +37,18 @@ Supabase iki bağlantı verir və **hər ikisi lazımdır**:
 
 `DIRECT_URL` təyin olunmasa miqrasiyalar `DATABASE_URL`-ə düşür.
 
+### Şəkil saxlama (Supabase Storage)
+
+Müştəri şəkilləri **private** bucket-də (`order-images`) saxlanılır — bazada
+yalnız obyekt açarı qalır, panel göstərəndə 1 saatlıq imzalı URL yaradılır.
+Bucket yoxdursa ilk yükləmədə avtomatik yaradılır.
+
+`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` **istehsalda mütləqdir**.
+Təyin olunmasa şəkillər lokal diskə yazılır və `next start` altında görünmür:
+Next.js `public/` qovluğunu build zamanı sabitləyir, runtime-da yazılan
+faylları serve etmir. Lokal disk yalnız `next dev` üçün fallback-dır və bu
+halda server loguna xəbərdarlıq yazılır.
+
 ### Deploy (Railway və s.)
 
 `npm start` konteyner qalxarkən avtomatik `prisma migrate deploy` →
@@ -94,6 +106,6 @@ Parollar `scrypt` ilə hash-lənir (salt + timing-safe müqayisə), sessiyalar b
 
 - Canvas mockup → **generativ AI** render (fotorealistik).
 - Kargo şirkəti API inteqrasiyası (ünvana görə real ən yaxın pickup məntəqəsi).
-- Şəkil yükləməsini obyekt-store-a (S3) keçirmək (hazırda lokal disk).
+- Şəkillərə ölçü optimallaşdırması (yükləmədən əvvəl kiçiltmə/sıxma).
 - Mağaza öz-özünə idarəetmə paneli + komissiya ödəniş axını.
 - İstehsalda Postgres-ə keçid.
