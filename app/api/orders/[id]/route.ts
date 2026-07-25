@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { isAuthed } from "@/lib/auth";
+import { Role, getSessionUser } from "@/lib/auth";
 import { OrderStatus, PaymentStatus } from "@/lib/constants";
 
 export const runtime = "nodejs";
@@ -13,16 +13,29 @@ const schema = z.object({
     .optional(),
 });
 
+// Sifariş statusunu yenilə.
+// Platforma admini bütün sifarişləri, mağaza admini yalnız öz mağazasının
+// sifarişlərini dəyişə bilər.
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!(await isAuthed())) {
+  const user = await getSessionUser();
+  if (!user) {
     return NextResponse.json({ error: "İcazə yoxdur." }, { status: 401 });
   }
+
   const { id } = await params;
-  const body = await req.json().catch(() => null);
-  const parsed = schema.safeParse(body);
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) {
+    return NextResponse.json({ error: "Sifariş tapılmadı." }, { status: 404 });
+  }
+
+  if (user.role !== Role.PLATFORM_ADMIN && user.storeId !== order.storeId) {
+    return NextResponse.json({ error: "İcazə yoxdur." }, { status: 403 });
+  }
+
+  const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Yanlış status." }, { status: 400 });
   }

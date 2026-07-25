@@ -1,33 +1,55 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/format";
 import { PaymentMethodLabel } from "@/lib/constants";
 import StatusControl from "./StatusControl";
 
-export const dynamic = "force-dynamic";
+type OrderWithRelations = {
+  id: string;
+  orderNumber: string;
+  status: string;
+  designImage: string | null;
+  uploadedImage: string | null;
+  customText: string | null;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  shippingAddress: string | null;
+  paymentMethod: string;
+  casePrice: number;
+  shippingFee: number;
+  total: number;
+  commissionRate: number;
+  commissionAmount: number;
+  store: { name: string };
+  phoneModel: { name: string };
+  pickupPoint: { name: string; address: string } | null;
+  addons: {
+    id: string;
+    quantity: number;
+    unitPrice: number;
+    product: { name: string };
+  }[];
+};
 
-export default async function OrderDetailPage({
-  params,
+// Hər iki paneldə istifadə olunur.
+// showCustomer=false olduqda müştəri əlaqə məlumatları gizlədilir.
+export default function OrderDetail({
+  order,
+  backHref,
+  backLabel = "Sifarişlərə qayıt",
+  commissionTitle = "Mağaza (komissiya)",
+  showStoreName = true,
 }: {
-  params: Promise<{ id: string }>;
+  order: OrderWithRelations;
+  backHref: string;
+  backLabel?: string;
+  commissionTitle?: string;
+  showStoreName?: boolean;
 }) {
-  const { id } = await params;
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: {
-      store: true,
-      phoneModel: true,
-      pickupPoint: true,
-      addons: { include: { product: true } },
-    },
-  });
-  if (!order) notFound();
-
   return (
     <div>
-      <Link href="/admin" className="text-sm text-indigo-600">
-        ← Sifarişlərə qayıt
+      <Link href={backHref} className="text-sm text-indigo-600">
+        ← {backLabel}
       </Link>
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -95,12 +117,14 @@ export default async function OrderDetailPage({
             />
             <Info
               label="Ödəniş üsulu"
-              value={PaymentMethodLabel[order.paymentMethod] ?? order.paymentMethod}
+              value={
+                PaymentMethodLabel[order.paymentMethod] ?? order.paymentMethod
+              }
             />
           </Section>
 
-          <Section title="Mağaza (komissiya)">
-            <Info label="Mağaza" value={order.store.name} />
+          <Section title={commissionTitle}>
+            {showStoreName && <Info label="Mağaza" value={order.store.name} />}
             <Info
               label="Komissiya nisbəti"
               value={`${(order.commissionRate * 100).toFixed(0)}%`}

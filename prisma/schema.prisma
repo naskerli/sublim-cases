@@ -29,6 +29,37 @@ model Store {
   updatedAt      DateTime @updatedAt
 
   orders Order[]
+  users  User[]
+}
+
+// Panel istifadəçisi.
+// PLATFORM_ADMIN — biz: bütün mağazaları və sifarişləri idarə edir.
+// STORE_ADMIN — mağaza sahibi: yalnız öz mağazasının məlumatlarını görür.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  // "PLATFORM_ADMIN" | "STORE_ADMIN"
+  role         String   @default("STORE_ADMIN")
+  // STORE_ADMIN üçün məcburi; PLATFORM_ADMIN üçün null
+  store        Store?   @relation(fields: [storeId], references: [id])
+  storeId      String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions Session[]
+}
+
+// Cookie ilə saxlanılan giriş sessiyası.
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 // Telefon modeli — kabro şablonu (canvas overlay) burada saxlanılır.

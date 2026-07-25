@@ -1,5 +1,20 @@
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { scrypt as _scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scrypt = promisify(_scrypt) as (
+  password: string,
+  salt: string,
+  keylen: number,
+) => Promise<Buffer>;
+
+// lib/auth.ts ilə eyni format: <salt>:<hash>
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const derived = await scrypt(password, salt, 64);
+  return `${salt}:${derived.toString("hex")}`;
+}
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL ?? "file:./dev.db",
@@ -46,6 +61,56 @@ async function main() {
       where: { slug: s.slug },
       update: s,
       create: s,
+    });
+  }
+
+  // --- Panel istifadəçiləri ---
+  // Mövcud istifadəçilərin parolu yenidən yazılmır (deploy zamanı sıfırlanmasın).
+  async function ensureUser(data: {
+    email: string;
+    password: string;
+    name: string;
+    role: string;
+    storeId?: string | null;
+  }) {
+    const existing = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (existing) return existing;
+    return prisma.user.create({
+      data: {
+        email: data.email,
+        passwordHash: await hashPassword(data.password),
+        name: data.name,
+        role: data.role,
+        storeId: data.storeId ?? null,
+      },
+    });
+  }
+
+  // Platforma admini (biz)
+  await ensureUser({
+    email: process.env.PLATFORM_ADMIN_EMAIL ?? "admin@sublim.az",
+    password: process.env.PLATFORM_ADMIN_PASSWORD ?? "admin123",
+    name: "Platforma Admini",
+    role: "PLATFORM_ADMIN",
+  });
+
+  // Hər demo mağaza üçün mağaza admini
+  const storeAdmins = [
+    { slug: "gencluk-mall", email: "mobistyle@sublim.az", name: "Rəşad (MobiStyle)" },
+    { slug: "28-mall", email: "phoneup@sublim.az", name: "Aygün (PhoneUp)" },
+    { slug: "ganja-central", email: "ganja@sublim.az", name: "Elvin (Gəncə)" },
+  ];
+  for (const a of storeAdmins) {
+    const store = await prisma.store.findUnique({ where: { slug: a.slug } });
+    if (!store) continue;
+    await ensureUser({
+      email: a.email,
+      password: "magaza123",
+      name: a.name,
+      role: "STORE_ADMIN",
+      storeId: store.id,
     });
   }
 

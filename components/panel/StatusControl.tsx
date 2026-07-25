@@ -18,7 +18,7 @@ export default function StatusControl({
   async function update(next: string) {
     setStatus(next);
     setSaving(true);
-    await fetch(`/api/admin/orders/${orderId}`, {
+    await fetch(`/api/orders/${orderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),

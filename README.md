@@ -26,31 +26,51 @@ npm run dev
 
 `http://localhost:3000` — ana səhifə (demo mağaza linkləri).
 
+## İstifadəçi rolları
+
+| Rol | Görür |
+|-----|-------|
+| **Müştəri** (girişsiz) | Landing + QR-dan açılan sifariş sihirbazı |
+| **PLATFORM_ADMIN** (biz) | Bütün mağazalar/sifarişlər, mağaza qeydiyyatı, admin təyini, QR generasiya |
+| **STORE_ADMIN** (mağaza) | Yalnız öz mağazasının sifarişləri, qazancı və QR kodu |
+
 ## Əsas axın
 
-| Yol | Təyinat |
-|-----|---------|
-| `/` | Landing + demo mağaza vitrinləri |
-| `/s/<slug>` | **Müştəri sihirbazı** — QR kodun hədəfi (model→dizayn→aksesuar→çatdırılma→təsdiq) |
-| `/admin` | Sifarişlər siyahısı + dövriyyə/komissiya xülasəsi |
-| `/admin/orders/<id>` | Sifariş detalı + status idarəetməsi |
-| `/admin/stores` | Mağazalar + hər mağazanın komissiya hesabatı |
+| Yol | Təyinat | Giriş |
+|-----|---------|-------|
+| `/` | Landing page | açıq |
+| `/s/<slug>` | **Müştəri sihirbazı** — QR hədəfi (model→dizayn→aksesuar→çatdırılma→təsdiq) | açıq |
+| `/login` | Vahid giriş — rola görə yönləndirir | açıq |
+| `/admin` | Platforma icmalı (dövriyyə, komissiya, xalis gəlir) | platforma |
+| `/admin/orders` · `/admin/orders/<id>` | Bütün sifarişlər + status idarəetməsi | platforma |
+| `/admin/stores` · `/admin/stores/new` | Mağaza siyahısı və qeydiyyatı | platforma |
+| `/admin/stores/<id>` | Mağaza detalı: statistika, QR, admin təyini | platforma |
+| `/store` | Mağazanın öz sifarişləri və qazancı | mağaza |
+| `/store/qr` | Mağazanın öz QR kodu (çap üçün yükləmə) | mağaza |
 
-Admin panelə default şifrə: `admin123` (`.env`-də `ADMIN_PASSWORD` ilə dəyişin).
+### Demo hesablar (seed)
+
+- Platforma: `admin@sublim.az` / `admin123` (`.env`-də `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` ilə dəyişin)
+- Mağaza: `mobistyle@sublim.az` / `magaza123` (digər demo mağazalar: `phoneup@`, `ganja@`)
 
 ## API
 
 - `POST /api/orders` — sifariş yaradır. Qiymətlər **serverdə** bazadan hesablanır
-  (client-ə etibar edilmir), şəkillər diskə saxlanılır, komissiya çıxarılır.
+  (client-ə etibar edilmir), şəkillər saxlanılır, komissiya çıxarılır.
   Kart seçilib Stripe konfiqurasiya olunubsa Checkout URL qaytarır.
-- `POST/DELETE /api/admin/login` — admin sessiyası (cookie).
-- `PATCH /api/admin/orders/<id>` — sifariş statusunu yeniləyir.
+- `PATCH /api/orders/<id>` — status yeniləyir (mağaza admini yalnız öz sifarişlərini).
+- `POST/DELETE /api/auth/login` — sessiya yaradır/bitirir (httpOnly cookie).
+- `POST /api/admin/stores` — mağaza qeydiyyatı (+ istəyə bağlı admin hesabı).
+- `POST /api/admin/stores/<id>/users` — mövcud mağazaya admin təyin edir.
+- `GET /api/qr/<slug>` — çap üçün 1024px QR PNG (rola görə məhdudlaşır).
 
 ## Verilənlər modeli
 
-`Store` (QR slug + komissiya nisbəti), `PhoneModel` (kabro forması JSON),
-`Product` (`CASE` əsas kabro / `ADDON` cross-sell), `PickupPoint` (kargo məntəqələri),
-`Order` (+ mağaza attribution, qiymət snapshot-ları, komissiya), `OrderAddon`.
+`Store` (QR slug + komissiya nisbəti), `User` (rol + mağaza bağlantısı), `Session`,
+`PhoneModel` (kabro forması JSON), `Product` (`CASE` / `ADDON`),
+`PickupPoint`, `Order` (+ mağaza attribution, qiymət snapshot-ları, komissiya), `OrderAddon`.
+
+Parollar `scrypt` ilə hash-lənir (salt + timing-safe müqayisə), sessiyalar bazada saxlanılır.
 
 ## Növbəti mərhələlər (roadmap)
 
