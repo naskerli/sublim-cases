@@ -1,5 +1,6 @@
+import "dotenv/config";
 import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { scrypt as _scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
@@ -16,8 +17,9 @@ async function hashPassword(password: string): Promise<string> {
   return `${salt}:${derived.toString("hex")}`;
 }
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL ?? "file:./dev.db",
+// Seed deploy zamanı işləyir — miqrasiyalarla eyni bağlantıdan getsin.
+const adapter = new PrismaPg({
+  connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL,
 });
 const prisma = new PrismaClient({ adapter });
 

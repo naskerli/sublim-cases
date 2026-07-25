@@ -42,12 +42,6 @@ next-env.d.ts
 
 /app/generated/prisma
 
-# database (local dev)
-/dev.db
-/dev.db-journal
-/prisma/dev.db
-/prisma/dev.db-journal
-
 # user uploads (local dev — istehsalda obyekt-store)
 /public/uploads
 

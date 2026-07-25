@@ -9,7 +9,7 @@ bağlanır ki, mağaza komissiyası hesablansın.
 ## Texnologiya
 
 - **Next.js 16** (App Router) + **TypeScript** — vahid kodbazada frontend + API
-- **Prisma 7** + **SQLite** (better-sqlite3 driver adapter) — dev bazası
+- **Prisma 7** + **PostgreSQL / Supabase** (`@prisma/adapter-pg` driver adapter)
 - **Tailwind CSS 4** — mobil-öncəlikli UI
 - **Canvas** — kabro mockup preview (şəkil + mətn kompoziti), asset faylı tələb etmir
 - **Stripe** (istəyə bağlı) — kart ödənişi; açar yoxdursa "çatdırılmada ödəniş"
@@ -18,13 +18,31 @@ bağlanır ki, mağaza komissiyası hesablansın.
 
 ```bash
 npm install
-cp .env.example .env          # DATABASE_URL, ADMIN_PASSWORD, (Stripe)
+cp .env.example .env          # DATABASE_URL + DIRECT_URL (Supabase), admin, (Stripe)
 npx prisma migrate dev        # sxemi tətbiq et
-npm run db:seed               # nümunə mağaza/model/məhsul/pickup
+npm run db:seed               # nümunə mağaza/model/məhsul/pickup + istifadəçilər
 npm run dev
 ```
 
-`http://localhost:3000` — ana səhifə (demo mağaza linkləri).
+`http://localhost:3000` — landing səhifə.
+
+### Verilənlər bazası bağlantısı
+
+Supabase iki bağlantı verir və **hər ikisi lazımdır**:
+
+| Dəyişən | Port | Nə üçün |
+|---------|------|---------|
+| `DATABASE_URL` | 6543 (pooler) | Runtime sorğuları — `?pgbouncer=true` əlavə edin |
+| `DIRECT_URL` | 5432 (direct) | Miqrasiyalar (DDL + advisory lock pooler-dən keçmir) |
+
+`DIRECT_URL` təyin olunmasa miqrasiyalar `DATABASE_URL`-ə düşür.
+
+### Deploy (Railway və s.)
+
+`npm start` konteyner qalxarkən avtomatik `prisma migrate deploy` →
+`seed` → `next start` işlədir. Seed idempotentdir: mövcud mağaza/istifadəçi
+məlumatlarını pozmur, parolları sıfırlamır. Env dəyişənlərini platformada
+təyin etmək kifayətdir.
 
 ## İstifadəçi rolları
 

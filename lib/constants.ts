@@ -1,4 +1,5 @@
-// Domen sabitləri — SQLite enum dəstəkləmədiyi üçün string kimi saxlanılır.
+// Domen sabitləri. Bazada string kimi saxlanılır (Postgres enum-u yox) —
+// yeni status əlavə etmək miqrasiya tələb etmir. Giriş zod ilə doğrulanır.
 
 export const OrderStatus = {
   PENDING: "PENDING",
