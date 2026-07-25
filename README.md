@@ -43,7 +43,9 @@ Müştəri şəkilləri **private** bucket-də (`order-images`) saxlanılır —
 yalnız obyekt açarı qalır, panel göstərəndə 1 saatlıq imzalı URL yaradılır.
 Bucket yoxdursa ilk yükləmədə avtomatik yaradılır.
 
-`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` **istehsalda mütləqdir**.
+`SUPABASE_URL` + `SUPABASE_SECRET_KEY` (Project Settings → API → *Secret keys*,
+`sb_secret_...`) **istehsalda mütləqdir**. Köhnə `service_role` JWT-si üçün
+`SUPABASE_SERVICE_ROLE_KEY` də qəbul olunur.
 Təyin olunmasa şəkillər lokal diskə yazılır və `next start` altında görünmür:
 Next.js `public/` qovluğunu build zamanı sabitləyir, runtime-da yazılan
 faylları serve etmir. Lokal disk yalnız `next dev` üçün fallback-dır və bu

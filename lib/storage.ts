@@ -21,7 +21,11 @@ function getSupabase(): SupabaseClient | null {
   if (cachedClient !== undefined) return cachedClient;
 
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Yeni açar sistemi: "Secret key" (sb_secret_...).
+  // Köhnə layihələrdə: service_role JWT. Hər ikisi dəstəklənir.
+  const key =
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   cachedClient =
     url && key
       ? createClient(url, key, { auth: { persistSession: false } })
@@ -102,7 +106,7 @@ export async function saveDataUrl(
   // istehsalda Supabase Storage mütləqdir.
   if (process.env.NODE_ENV === "production") {
     console.error(
-      "[storage] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY təyin olunmayıb — " +
+      "[storage] SUPABASE_URL/SUPABASE_SECRET_KEY təyin olunmayıb — " +
         "şəkil lokal diskə yazılır və istehsalda GÖRÜNMƏYƏCƏK. " +
         "Supabase Storage konfiqurasiya edin.",
     );
