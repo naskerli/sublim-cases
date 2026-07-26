@@ -43,22 +43,32 @@ const DESIGN_TABS = [
   { label: "Yazı", icon: "✍️" },
 ];
 
-// Yükləmə addımında növbələşən CTA mesajları
+// Yükləmə addımında növbələşən CTA kartları.
+// Hər kartın öz qradienti və mesaja uyğun düzülüşü (variant) var.
 const UPLOAD_MESSAGES = [
   {
+    variant: "design" as const,
     icon: "🎨",
     title: "Sən seç, biz çap edək",
     text: "Ekranda gördüyün dizayn kabronun üzərinə eynilə köçürülür",
+    card: "from-indigo-500 via-purple-500 to-fuchsia-500",
+    glow: "bg-fuchsia-300/40",
   },
   {
+    variant: "gift" as const,
     icon: "🎁",
     title: "Əla hədiyyə olur",
     text: "Ad günü, ildönümü və xüsusi tarixlər üçün fərdi seçim",
+    card: "from-rose-500 via-pink-500 to-orange-400",
+    glow: "bg-amber-300/40",
   },
   {
+    variant: "delivery" as const,
     icon: "🚚",
     title: "Sənə ən yaxın nöqtəyə",
     text: "Sifarişini seçdiyin pickup məntəqəsindən rahat götür",
+    card: "from-sky-500 via-cyan-500 to-emerald-400",
+    glow: "bg-cyan-200/40",
   },
 ];
 
@@ -402,26 +412,75 @@ export default function OrderWizard({
           </label>
         </div>
 
-        {/* Animasiyalı CTA — qalan sahəni doldurur */}
-        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-6">
-          <div
-            aria-hidden
-            className="sc-blob pointer-events-none absolute h-52 w-52 rounded-full bg-indigo-300/25 blur-3xl"
-          />
-          <div className="relative h-28 w-full">
+        {/* Növbələşən CTA kartları — qalan sahəni doldurur */}
+        <div className="flex min-h-0 flex-1 items-center px-4 py-3">
+          {/* Çox alçaq ekranlarda (məs. 568px) kart üçün yer qalmır —
+              məzmunun kəsilməməsi üçün gizlədilir, funksional hissələr qalır. */}
+          <div className="relative hidden h-full max-h-[210px] min-h-[132px] w-full [@media(min-height:640px)]:block">
             {UPLOAD_MESSAGES.map((m, i) => (
               <div
                 key={m.title}
-                className="sc-rotate-msg absolute inset-0 flex flex-col items-center justify-center px-2 text-center"
-                style={{ animationDelay: `${i * 3}s` }}
+                className="sc-rotate-msg absolute inset-0"
+                style={{ animationDelay: `${i * 5}s` }}
               >
-                <span className="text-3xl">{m.icon}</span>
-                <p className="mt-2 text-sm font-bold text-gray-900">
-                  {m.title}
-                </p>
-                <p className="mt-0.5 text-xs leading-snug text-gray-500">
-                  {m.text}
-                </p>
+                <div
+                  className={`relative flex h-full flex-col justify-center overflow-hidden rounded-2xl bg-gradient-to-br p-5 text-white shadow-lg ${m.card}`}
+                >
+                  {/* dekorativ işıq */}
+                  <div
+                    aria-hidden
+                    className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl ${m.glow}`}
+                  />
+
+                  {m.variant === "gift" ? (
+                    // Hədiyyə: ikon solda qutuda, mətn sağda
+                    <div className="relative flex items-center gap-4">
+                      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-3xl backdrop-blur">
+                        {m.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold">{m.title}</p>
+                        <p className="mt-1 text-xs leading-snug text-white/85">
+                          {m.text}
+                        </p>
+                      </div>
+                    </div>
+                  ) : m.variant === "delivery" ? (
+                    // Çatdırılma: marşrut xətti
+                    <div className="relative text-center">
+                      <div className="mb-2.5 flex items-center justify-center gap-2">
+                        <span className="text-2xl">{m.icon}</span>
+                        <span className="h-px w-12 border-t-2 border-dashed border-white/60" />
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/25 text-sm backdrop-blur">
+                          📍
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold">{m.title}</p>
+                      <p className="mt-1 text-xs leading-snug text-white/85">
+                        {m.text}
+                      </p>
+                    </div>
+                  ) : (
+                    // Dizayn: palitra nöqtələri
+                    <div className="relative text-center">
+                      <span className="text-3xl">{m.icon}</span>
+                      <p className="mt-2 text-sm font-bold">{m.title}</p>
+                      <p className="mt-1 text-xs leading-snug text-white/85">
+                        {m.text}
+                      </p>
+                      <div className="mt-3 flex justify-center gap-1.5">
+                        {["bg-white", "bg-amber-300", "bg-emerald-300", "bg-sky-300"].map(
+                          (c) => (
+                            <span
+                              key={c}
+                              className={`h-2 w-2 rounded-full ${c}`}
+                            />
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
