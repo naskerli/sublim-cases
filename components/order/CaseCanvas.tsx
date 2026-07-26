@@ -192,35 +192,39 @@ function drawCamera(ctx: CanvasRenderingContext2D, shape: CaseShape) {
       break;
     }
 
-    // Galaxy S26 — oval ada, 3 lens şaquli
+    // Galaxy S26 — pill formalı ada, 3 lens şaquli; flaş adadan kənarda
     case "galaxy-island-3": {
-      const w = mm(24);
+      const w = mm(23);
       const x = mm(9);
-      const y = mm(9);
-      const h = mm(58);
+      const y = mm(10);
+      const h = mm(55);
       moduleBase(ctx, x, y, w, h, w / 2);
-      const r = mm(7.4);
+      const r = mm(7.2);
       const cx = x + w / 2;
-      lens(ctx, cx, y + mm(12), r);
-      lens(ctx, cx, y + mm(29), r);
-      lens(ctx, cx, y + mm(46), r);
-      // flaş — adanın sağında
-      dot(ctx, x + w + mm(6.5), y + mm(12), mm(2.4), "rgba(255,240,205,0.9)");
+      lens(ctx, cx, y + mm(11.5), r);
+      lens(ctx, cx, y + mm(27.5), r);
+      lens(ctx, cx, y + mm(43.5), r);
+      dot(ctx, x + w + mm(7), y + mm(12), mm(2.4), "rgba(255,240,205,0.9)");
       break;
     }
 
-    // Galaxy S26 Ultra — adasız, ayrı-ayrı halqalar + kiçik sensorlar
+    // Galaxy S26 Ultra — pill ada içində 3 lens (main, telefoto, ultra-geniş);
+    // 4-cü sensor və flaş adadan kənarda, ayrıca çıxıntıdadır.
     case "galaxy-ultra": {
-      const cx = mm(20);
-      const r = mm(8.6);
-      lens(ctx, cx, mm(19), r);
-      lens(ctx, cx, mm(39), r);
-      lens(ctx, cx, mm(59), r);
-      // kiçik sensorlar və aralarında flaş
-      const cx2 = cx + mm(19);
-      lens(ctx, cx2, mm(21), mm(5.4));
-      dot(ctx, cx2, mm(34), mm(2.6), "rgba(255,240,205,0.9)");
-      lens(ctx, cx2, mm(47), mm(5.4));
+      const w = mm(25);
+      const x = mm(9.5);
+      const y = mm(10);
+      const h = mm(60);
+      moduleBase(ctx, x, y, w, h, w / 2);
+      const r = mm(7.8);
+      const cx = x + w / 2;
+      lens(ctx, cx, y + mm(12.5), r);
+      lens(ctx, cx, y + mm(30), r);
+      lens(ctx, cx, y + mm(47.5), r);
+      // adadan kənar: 4-cü sensor + flaş
+      const ox = x + w + mm(9.5);
+      lens(ctx, ox, y + mm(14), mm(4.6));
+      dot(ctx, ox, y + mm(27), mm(2.7), "rgba(255,240,205,0.9)");
       break;
     }
   }
