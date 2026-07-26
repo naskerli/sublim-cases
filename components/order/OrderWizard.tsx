@@ -49,6 +49,7 @@ export default function OrderWizard({
   const [brand, setBrand] = useState(phoneModels[0]?.brand ?? "");
   const [modelId, setModelId] = useState("");
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState<string | null>(null);
 
   // Step 2
   const [transform, setTransform] = useState<PhotoTransform>({
@@ -119,8 +120,15 @@ export default function OrderWizard({
       setError("Zəhmət olmasa şəkil faylı seçin.");
       return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Şəkil çox böyükdür (maksimum 10 MB).");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => setPhotoSrc(reader.result as string);
+    reader.onload = () => {
+      setPhotoSrc(reader.result as string);
+      setPhotoName(file.name);
+    };
     reader.readAsDataURL(file);
     setError(null);
   }
@@ -285,10 +293,26 @@ export default function OrderWizard({
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Şəkil yüklə
             </label>
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center hover:border-indigo-400">
-              <span className="text-3xl">📷</span>
-              <span className="mt-2 text-sm text-gray-600">
-                {photoSrc ? "Şəkli dəyişdir" : "Şəkil seçmək üçün toxun"}
+            <label
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
+                photoSrc
+                  ? "border-emerald-300 bg-emerald-50"
+                  : "border-gray-300 bg-gray-50 hover:border-indigo-400"
+              }`}
+            >
+              <span className="text-3xl">{photoSrc ? "✅" : "📷"}</span>
+              <span className="mt-2 text-sm font-medium text-gray-700">
+                {photoSrc ? "Şəkil seçildi" : "Şəkil seçmək üçün toxun"}
+              </span>
+              {photoName && (
+                <span className="mt-1 max-w-full truncate px-2 text-xs text-gray-500">
+                  {photoName}
+                </span>
+              )}
+              <span className="mt-2 text-xs text-indigo-600">
+                {photoSrc
+                  ? "Dəyişdirmək üçün toxun"
+                  : "JPG, PNG · maksimum 10 MB"}
               </span>
               <input
                 type="file"
@@ -297,20 +321,12 @@ export default function OrderWizard({
                 onChange={onFile}
               />
             </label>
+            {photoSrc && (
+              <p className="mt-2 text-center text-xs text-gray-500">
+                Növbəti addımda kabronun üzərində görüb tənzimləyəcəksən.
+              </p>
+            )}
           </div>
-
-          {photoSrc && shape && (
-            <div className="flex justify-center pt-2">
-              <div className="w-40">
-                <CaseCanvas
-                  shape={shape}
-                  photoSrc={photoSrc}
-                  transform={transform}
-                  text={{ ...text, text: "" }}
-                />
-              </div>
-            </div>
-          )}
         </div>
       )}
 
