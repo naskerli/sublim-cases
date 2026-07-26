@@ -43,6 +43,25 @@ const DESIGN_TABS = [
   { label: "Yazı", icon: "✍️" },
 ];
 
+// Yükləmə addımında növbələşən CTA mesajları
+const UPLOAD_MESSAGES = [
+  {
+    icon: "🎨",
+    title: "Sən seç, biz çap edək",
+    text: "Ekranda gördüyün dizayn kabronun üzərinə eynilə köçürülür",
+  },
+  {
+    icon: "🎁",
+    title: "Əla hədiyyə olur",
+    text: "Ad günü, ildönümü və xüsusi tarixlər üçün fərdi seçim",
+  },
+  {
+    icon: "🚚",
+    title: "Sənə ən yaxın nöqtəyə",
+    text: "Sifarişini seçdiyin pickup məntəqəsindən rahat götür",
+  },
+];
+
 // AI tərzləri — hələ qoşulmayıb, yalnız "Orijinal" aktivdir.
 // AI xidməti qoşulduqda bura model/prompt bağlanacaq.
 const AI_STYLES = [
@@ -306,8 +325,8 @@ export default function OrderWizard({
           </div>
         </div>
 
-        {/* Şəkil yükləmə — qalan sahəni doldurur */}
-        <div className="flex min-h-0 flex-1 flex-col px-4 pb-2 pt-4">
+        {/* Şəkil yükləmə — kompakt */}
+        <div className="shrink-0 px-4 pt-4">
           <label
             onDragOver={(e) => {
               e.preventDefault();
@@ -320,7 +339,7 @@ export default function OrderWizard({
               const file = e.dataTransfer.files?.[0];
               if (file) acceptFile(file);
             }}
-            className={`relative flex min-h-0 flex-1 cursor-pointer rounded-2xl p-[2px] transition-transform ${
+            className={`relative flex h-[104px] cursor-pointer rounded-2xl p-[2px] transition-transform ${
               photoSrc
                 ? "bg-emerald-400"
                 : `sc-anim-gradient bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-sky-500 ${
@@ -329,42 +348,48 @@ export default function OrderWizard({
             }`}
           >
             <div
-              className={`flex h-full w-full flex-col items-center justify-center rounded-[14px] px-5 text-center transition-colors ${
-                photoSrc ? "bg-emerald-50" : dragging ? "bg-indigo-50" : "bg-white"
+              className={`flex h-full w-full items-center gap-4 rounded-[14px] px-4 transition-colors ${
+                photoSrc
+                  ? "bg-emerald-50"
+                  : dragging
+                    ? "bg-indigo-50"
+                    : "bg-white"
               }`}
             >
               {photoSrc ? (
                 <>
-                  <span className="sc-pop text-5xl">✅</span>
-                  <span className="mt-3 text-base font-bold text-gray-900">
-                    Şəkil hazırdır
-                  </span>
-                  {photoName && (
-                    <span className="mt-1 max-w-full truncate text-xs text-gray-500">
-                      {photoName}
-                    </span>
-                  )}
-                  <span className="mt-4 rounded-full bg-white px-4 py-2 text-xs font-semibold text-indigo-600 shadow-sm">
-                    Başqa şəkil seç
+                  <span className="sc-pop shrink-0 text-3xl">✅</span>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-sm font-bold text-gray-900">
+                      Şəkil hazırdır
+                    </p>
+                    {photoName && (
+                      <p className="truncate text-xs text-gray-500">
+                        {photoName}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-indigo-600 shadow-sm">
+                    Dəyişdir
                   </span>
                 </>
               ) : (
                 <>
-                  <span className="relative flex h-20 w-20 items-center justify-center">
+                  <span className="relative flex h-14 w-14 shrink-0 items-center justify-center">
                     <span className="sc-pulse-ring absolute inset-0 rounded-full bg-indigo-400/30" />
-                    <span className="sc-bob relative text-5xl">📸</span>
+                    <span className="sc-bob relative text-3xl">📸</span>
                   </span>
-                  <span className="mt-4 text-base font-bold text-gray-900">
-                    Şəklini yüklə
-                  </span>
-                  <span className="mt-1 text-sm text-gray-500">
-                    Toxun və ya şəkli bura sürüşdür
-                  </span>
-                  <span className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
-                    <span>JPG · PNG</span>
-                    <span>·</span>
-                    <span>maksimum 10 MB</span>
-                  </span>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-sm font-bold text-gray-900">
+                      Şəklini yüklə
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Toxun və ya bura sürüşdür
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-gray-400">
+                      JPG · PNG · maksimum 10 MB
+                    </p>
+                  </div>
                 </>
               )}
             </div>
@@ -375,12 +400,31 @@ export default function OrderWizard({
               onChange={onFile}
             />
           </label>
+        </div>
 
-          <p className="mt-2 shrink-0 text-center text-[11px] text-gray-400">
-            {photoSrc
-              ? "Növbəti addımda kabronun üzərində tənzimləyəcəksən"
-              : "Ən yaxşı nəticə üçün keyfiyyətli, işıqlı şəkil seç"}
-          </p>
+        {/* Animasiyalı CTA — qalan sahəni doldurur */}
+        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-6">
+          <div
+            aria-hidden
+            className="sc-blob pointer-events-none absolute h-52 w-52 rounded-full bg-indigo-300/25 blur-3xl"
+          />
+          <div className="relative h-28 w-full">
+            {UPLOAD_MESSAGES.map((m, i) => (
+              <div
+                key={m.title}
+                className="sc-rotate-msg absolute inset-0 flex flex-col items-center justify-center px-2 text-center"
+                style={{ animationDelay: `${i * 3}s` }}
+              >
+                <span className="text-3xl">{m.icon}</span>
+                <p className="mt-2 text-sm font-bold text-gray-900">
+                  {m.title}
+                </p>
+                <p className="mt-0.5 text-xs leading-snug text-gray-500">
+                  {m.text}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Naviqasiya */}
