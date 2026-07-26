@@ -27,6 +27,9 @@ export type CaseShape = {
 // mm → logical px. 4.5 seçilib ki, tipik telefon ~320px enində çəkilsin.
 const PX_PER_MM = 4.5;
 
+// Mətnin arxa fonu: yoxdur / düz rəng / şəklin bulanıq təbəqəsi
+export type TextBackground = "none" | "solid" | "blur";
+
 export type TextOptions = {
   text: string;
   font: string;
@@ -34,6 +37,9 @@ export type TextOptions = {
   size: number; // logical px
   x: number; // 0..1 (mərkəz nisbəti)
   y: number; // 0..1
+  bg: TextBackground;
+  bgColor: string; // düz fon rəngi / blur üzərindəki çalar
+  border: boolean; // çərçivə
 };
 
 export type PhotoTransform = {
@@ -58,6 +64,14 @@ type Props = {
 };
 
 const SCALE = 2; // rezolyusiya çarpanı (kəskinlik üçün)
+
+// "#rrggbb" → "rgba(r,g,b,a)". Naməlum formatda olduğu kimi qaytarır.
+function withAlpha(hex: string, alpha: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
 
 function roundedRectPath(
   ctx: CanvasRenderingContext2D,
@@ -265,6 +279,9 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
       ctx.fillRect(0, 0, W, H);
 
       const img = imgRef.current;
+      // Şəklin yerləşməsi — blur fonu üçün sonra təkrar istifadə olunur.
+      let placement: { dx: number; dy: number; dw: number; dh: number } | null =
+        null;
       if (img && img.complete && img.naturalWidth > 0) {
         // "cover" hesablaması + istifadəçi transformasiyası
         const scale =
@@ -274,24 +291,78 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
         const dh = img.naturalHeight * scale;
         const dx = (W - dw) / 2 + transform.offsetX * (dw - W) * 0.5;
         const dy = (H - dh) / 2 + transform.offsetY * (dh - H) * 0.5;
+        placement = { dx, dy, dw, dh };
         ctx.drawImage(img, dx, dy, dw, dh);
       }
 
-      // Mətn overlay
+      // Mətn overlay (fon + çərçivə + mətn)
       if (text.text.trim()) {
-        ctx.save();
-        ctx.font = `700 ${text.size * SCALE}px ${text.font}`;
-        ctx.fillStyle = text.color;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.shadowColor = "rgba(0,0,0,0.35)";
-        ctx.shadowBlur = 6 * SCALE;
+        const fontPx = text.size * SCALE;
+        const lines = text.text.split("\n");
+        const lineH = fontPx * 1.2;
         const tx = text.x * W;
         const ty = text.y * H;
-        // Çoxsətirli dəstək
-        const lines = text.text.split("\n");
-        const lineH = text.size * SCALE * 1.2;
         const startY = ty - ((lines.length - 1) * lineH) / 2;
+
+        ctx.save();
+        ctx.font = `700 ${fontPx}px ${text.font}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const hasBox = text.bg !== "none" || text.border;
+
+        if (hasBox) {
+          // Mətn qutusunun ölçüsü
+          const maxLine = Math.max(
+            ...lines.map((ln) => ctx.measureText(ln).width),
+          );
+          const padX = fontPx * 0.55;
+          const padY = fontPx * 0.4;
+          const boxW = maxLine + padX * 2;
+          const boxH = lines.length * lineH + padY * 2 - (lineH - fontPx);
+          const boxX = tx - boxW / 2;
+          const boxY = ty - boxH / 2;
+          const boxR = Math.min(fontPx * 0.45, boxH / 2);
+
+          if (text.bg === "blur" && placement) {
+            // Şəklin həmin hissəsini bulanıq şəkildə təkrar çək
+            ctx.save();
+            roundedRectPath(ctx, boxX, boxY, boxW, boxH, boxR);
+            ctx.clip();
+            ctx.filter = `blur(${Math.max(2, fontPx * 0.22)}px)`;
+            ctx.drawImage(
+              img!,
+              placement.dx,
+              placement.dy,
+              placement.dw,
+              placement.dh,
+            );
+            ctx.filter = "none";
+            // Oxunaqlılıq üçün yüngül çalar (blur dəstəklənməsə də işləyir)
+            ctx.fillStyle = withAlpha(text.bgColor, 0.32);
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            ctx.restore();
+          } else if (text.bg === "solid") {
+            roundedRectPath(ctx, boxX, boxY, boxW, boxH, boxR);
+            ctx.fillStyle = withAlpha(text.bgColor, 0.82);
+            ctx.fill();
+          }
+
+          if (text.border) {
+            roundedRectPath(ctx, boxX, boxY, boxW, boxH, boxR);
+            ctx.lineWidth = Math.max(1.5, fontPx * 0.075);
+            ctx.strokeStyle = text.color;
+            ctx.stroke();
+          }
+        }
+
+        // Mətnin özü
+        ctx.fillStyle = text.color;
+        if (!hasBox) {
+          // Fon yoxdursa kölgə oxunaqlılığı artırır
+          ctx.shadowColor = "rgba(0,0,0,0.35)";
+          ctx.shadowBlur = 6 * SCALE;
+        }
         lines.forEach((ln, i) => {
           ctx.fillText(ln, tx, startY + i * lineH);
         });
@@ -354,6 +425,9 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
       text.size,
       text.x,
       text.y,
+      text.bg,
+      text.bgColor,
+      text.border,
     ]);
 
     useImperativeHandle(ref, () => ({

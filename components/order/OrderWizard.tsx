@@ -34,6 +34,15 @@ const FONTS = [
 
 const COLORS = ["#ffffff", "#000000", "#ff3b6b", "#ffd400", "#00d1b2", "#6c5ce7"];
 
+// Mətn fonu üçün seçimlər
+const TEXT_BACKGROUNDS: { value: TextOptions["bg"]; label: string }[] = [
+  { value: "none", label: "Fonsuz" },
+  { value: "solid", label: "Sadə" },
+  { value: "blur", label: "Blur" },
+];
+
+const BG_COLORS = ["#000000", "#ffffff"];
+
 const STEPS = ["Model & Şəkil", "Dizayn", "Aksesuarlar", "Çatdırılma", "Təsdiq"];
 
 // Dizayn addımının daxili tabları
@@ -112,6 +121,9 @@ export default function OrderWizard({
     size: 42,
     x: 0.5,
     y: 0.8,
+    bg: "none",
+    bgColor: "#000000",
+    border: false,
   });
 
   // Dizayn addımının aktiv tabı (0: tərz, 1: yerləşdir, 2: yazı)
@@ -554,7 +566,7 @@ export default function OrderWizard({
           </div>
 
           {/* Tab məzmunu — hündürlük sabitdir ki, layout tərpənməsin */}
-          <div className="mt-3 h-[178px] overflow-y-auto sm:h-[196px]">
+          <div className="mt-3 h-[212px] overflow-y-auto sm:h-[226px]">
             {designTab === 0 && (
               <div>
                 <div className="grid grid-cols-3 gap-2">
@@ -682,6 +694,61 @@ export default function OrderWizard({
                     onChange={(v) => setText((t) => ({ ...t, y: v }))}
                     compact
                   />
+                </div>
+
+                {/* Fon və çərçivə */}
+                <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 rounded-lg bg-gray-100 p-0.5">
+                    {TEXT_BACKGROUNDS.map((b) => (
+                      <button
+                        key={b.value}
+                        onClick={() =>
+                          setText((t) => ({ ...t, bg: b.value }))
+                        }
+                        className={`rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                          text.bg === b.value
+                            ? "bg-white text-indigo-600 shadow-sm"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Fon rəngi — yalnız fon aktivdirsə */}
+                  {text.bg !== "none" && (
+                    <div className="flex items-center gap-1.5">
+                      {BG_COLORS.map((c) => (
+                        <button
+                          key={c}
+                          onClick={() =>
+                            setText((t) => ({ ...t, bgColor: c }))
+                          }
+                          className={`h-6 w-6 shrink-0 rounded-full border-2 ${
+                            text.bgColor === c
+                              ? "border-indigo-500"
+                              : "border-gray-200"
+                          }`}
+                          style={{ background: c }}
+                          aria-label={`Fon rəngi ${c}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() =>
+                      setText((t) => ({ ...t, border: !t.border }))
+                    }
+                    className={`ml-auto shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                      text.border
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                        : "border-gray-300 text-gray-500"
+                    }`}
+                  >
+                    Çərçivə
+                  </button>
                 </div>
               </div>
             )}
