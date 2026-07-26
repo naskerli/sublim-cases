@@ -7,12 +7,25 @@ import {
   useRef,
 } from "react";
 
+// Kamera adasının düzülüşü — hər model ailəsinin öz vizual imzası var.
+export type CameraLayout =
+  | "ios-pill-2" // iPhone 17 — şaquli pill modul, 2 lens
+  | "ios-plateau-1" // iPhone Air — tam enli plato, 1 lens
+  | "ios-plateau-3" // iPhone 17 Pro / Pro Max — tam enli plato, 3 lens
+  | "galaxy-island-3" // Galaxy S26 — oval ada, 3 lens
+  | "galaxy-ultra"; // Galaxy S26 Ultra — ayrı-ayrı halqalar
+
+// Korpusun REAL fiziki ölçüləri (mm). Canvas bu nisbətlərə görə çəkilir,
+// yəni Pro Max həqiqətən iPhone 17-dən böyük görünür.
 export type CaseShape = {
-  w: number;
-  h: number;
-  radius: number;
-  camera: "single" | "triple";
+  wMm: number;
+  hMm: number;
+  radiusMm: number;
+  camera: CameraLayout;
 };
+
+// mm → logical px. 4.5 seçilib ki, tipik telefon ~320px enində çəkilsin.
+const PX_PER_MM = 4.5;
 
 export type TextOptions = {
   text: string;
@@ -63,52 +76,155 @@ function roundedRectPath(
   ctx.closePath();
 }
 
-function drawCamera(
+// --- Kamera adası ---
+// Ölçülər mm ilə verilir (məhsul şəkillərindən təxmin edilib), korpusun
+// real ölçüsünə görə miqyaslanır. Bütün düzülüşlərdə kamera SOL yuxarıdadır.
+
+function lens(
   ctx: CanvasRenderingContext2D,
-  shape: CaseShape,
+  cx: number,
+  cy: number,
+  r: number,
 ) {
-  // Kamera modulu — sağ yuxarı künc
-  const pad = 24 * SCALE;
-  const modW = (shape.camera === "triple" ? 120 : 78) * SCALE;
-  const modH = (shape.camera === "triple" ? 120 : 78) * SCALE;
-  const mx = shape.w * SCALE - pad - modW;
-  const my = pad;
+  // gövdə
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(18,18,22,0.94)";
+  ctx.fill();
+  // metal halqa
+  ctx.lineWidth = r * 0.2;
+  ctx.strokeStyle = "rgba(150,160,180,0.65)";
+  ctx.stroke();
+  // şüşə
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.58, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(28,32,48,0.95)";
+  ctx.fill();
+  // parıltı
+  ctx.beginPath();
+  ctx.arc(cx - r * 0.28, cy - r * 0.28, r * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(190,205,235,0.55)";
+  ctx.fill();
+}
+
+function dot(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  fill: string,
+) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function moduleBase(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  roundedRectPath(ctx, x, y, w, h, r);
+  ctx.fillStyle = "rgba(15,15,20,0.42)";
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, w * 0.006);
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.stroke();
+}
+
+function drawCamera(ctx: CanvasRenderingContext2D, shape: CaseShape) {
+  const k = PX_PER_MM * SCALE; // mm → cihaz pikseli
+  const mm = (v: number) => v * k;
+  const W = shape.wMm * k;
 
   ctx.save();
-  roundedRectPath(ctx, mx, my, modW, modH, 28 * SCALE);
-  ctx.fillStyle = "rgba(15,15,20,0.55)";
-  ctx.fill();
-  ctx.lineWidth = 2 * SCALE;
-  ctx.strokeStyle = "rgba(255,255,255,0.15)";
-  ctx.stroke();
 
-  const lens = (cx: number, cy: number, r: number) => {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(10,10,12,0.9)";
-    ctx.fill();
-    ctx.lineWidth = 3 * SCALE;
-    ctx.strokeStyle = "rgba(120,130,150,0.6)";
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx - r * 0.25, cy - r * 0.25, r * 0.3, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(150,170,200,0.5)";
-    ctx.fill();
-  };
+  switch (shape.camera) {
+    // iPhone 17 — şaquli pill modul, 2 lens üst-üstə, flaş modulun sağında
+    case "ios-pill-2": {
+      const x = mm(8.5);
+      const y = mm(8.5);
+      const w = mm(27);
+      const h = mm(46);
+      moduleBase(ctx, x, y, w, h, w / 2);
+      const r = mm(8.2);
+      lens(ctx, x + w / 2, y + mm(12.5), r);
+      lens(ctx, x + w / 2, y + mm(33.5), r);
+      // flaş — modulun sağında
+      dot(ctx, x + w + mm(7), y + mm(11), mm(2.8), "rgba(255,240,205,0.9)");
+      break;
+    }
 
-  if (shape.camera === "triple") {
-    const r = 20 * SCALE;
-    lens(mx + modW * 0.32, my + modH * 0.32, r);
-    lens(mx + modW * 0.68, my + modH * 0.32, r);
-    lens(mx + modW * 0.32, my + modH * 0.68, r);
-    // flash
-    ctx.beginPath();
-    ctx.arc(mx + modW * 0.68, my + modH * 0.68, 8 * SCALE, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,240,200,0.85)";
-    ctx.fill();
-  } else {
-    lens(mx + modW * 0.5, my + modH * 0.5, 26 * SCALE);
+    // iPhone Air — tam enli plato, tək lens solda
+    case "ios-plateau-1": {
+      const x = mm(5.5);
+      const y = mm(6.5);
+      const w = W - mm(11);
+      const h = mm(24);
+      moduleBase(ctx, x, y, w, h, mm(8));
+      lens(ctx, x + mm(15), y + h / 2, mm(8.5));
+      dot(ctx, x + mm(31), y + h / 2, mm(2.6), "rgba(255,240,205,0.9)");
+      // sağda mikrofon
+      dot(ctx, x + w - mm(12), y + h / 2, mm(1.6), "rgba(60,60,70,0.8)");
+      break;
+    }
+
+    // iPhone 17 Pro / Pro Max — tam enli plato, solda üçbucaq 3 lens
+    case "ios-plateau-3": {
+      const x = mm(5.5);
+      const y = mm(6.5);
+      const w = W - mm(11);
+      const h = mm(31);
+      moduleBase(ctx, x, y, w, h, mm(9));
+      const r = mm(8.6);
+      const cx1 = x + mm(14);
+      const cx2 = cx1 + mm(17.5);
+      lens(ctx, cx1, y + mm(9.5), r);
+      lens(ctx, cx1, y + mm(21.5), r);
+      lens(ctx, cx2, y + h / 2, r);
+      // sağ tərəf: LiDAR + flaş
+      dot(ctx, x + w - mm(20), y + h / 2 - mm(5), mm(3.2), "rgba(35,38,50,0.95)");
+      dot(ctx, x + w - mm(20), y + h / 2 + mm(5), mm(3.4), "rgba(255,240,205,0.9)");
+      break;
+    }
+
+    // Galaxy S26 — oval ada, 3 lens şaquli
+    case "galaxy-island-3": {
+      const w = mm(24);
+      const x = mm(9);
+      const y = mm(9);
+      const h = mm(58);
+      moduleBase(ctx, x, y, w, h, w / 2);
+      const r = mm(7.4);
+      const cx = x + w / 2;
+      lens(ctx, cx, y + mm(12), r);
+      lens(ctx, cx, y + mm(29), r);
+      lens(ctx, cx, y + mm(46), r);
+      // flaş — adanın sağında
+      dot(ctx, x + w + mm(6.5), y + mm(12), mm(2.4), "rgba(255,240,205,0.9)");
+      break;
+    }
+
+    // Galaxy S26 Ultra — adasız, ayrı-ayrı halqalar + kiçik sensorlar
+    case "galaxy-ultra": {
+      const cx = mm(20);
+      const r = mm(8.6);
+      lens(ctx, cx, mm(19), r);
+      lens(ctx, cx, mm(39), r);
+      lens(ctx, cx, mm(59), r);
+      // kiçik sensorlar və aralarında flaş
+      const cx2 = cx + mm(19);
+      lens(ctx, cx2, mm(21), mm(5.4));
+      dot(ctx, cx2, mm(34), mm(2.6), "rgba(255,240,205,0.9)");
+      lens(ctx, cx2, mm(47), mm(5.4));
+      break;
+    }
   }
+
   ctx.restore();
 }
 
@@ -126,8 +242,10 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const W = shape.w * SCALE;
-      const H = shape.h * SCALE;
+      const k = PX_PER_MM * SCALE;
+      const W = shape.wMm * k;
+      const H = shape.hMm * k;
+      const radius = shape.radiusMm * k;
       canvas.width = W;
       canvas.height = H;
 
@@ -135,7 +253,7 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
 
       // Kabro forması — kəsmə sahəsi
       ctx.save();
-      roundedRectPath(ctx, 0, 0, W, H, shape.radius * SCALE);
+      roundedRectPath(ctx, 0, 0, W, H, radius);
       ctx.clip();
 
       // Fon (şəkil yoxdursa)
@@ -189,7 +307,7 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
         SCALE,
         W - 2 * SCALE,
         H - 2 * SCALE,
-        shape.radius * SCALE,
+        radius,
       );
       ctx.lineWidth = 3 * SCALE;
       ctx.strokeStyle = "rgba(255,255,255,0.35)";
@@ -219,9 +337,9 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
       draw();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-      shape.w,
-      shape.h,
-      shape.radius,
+      shape.wMm,
+      shape.hMm,
+      shape.radiusMm,
       shape.camera,
       transform.scale,
       transform.offsetX,
@@ -244,7 +362,7 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
     const sizing =
       fit === "height"
         ? { height: "100%", width: "auto", maxWidth: "100%" }
-        : { width: "100%", maxWidth: shape.w };
+        : { width: "100%", maxWidth: shape.wMm * PX_PER_MM };
 
     return (
       <canvas
@@ -252,8 +370,8 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
         className={className}
         style={{
           ...sizing,
-          aspectRatio: `${shape.w} / ${shape.h}`,
-          borderRadius: shape.radius,
+          aspectRatio: `${shape.wMm} / ${shape.hMm}`,
+          borderRadius: `${(shape.radiusMm / shape.wMm) * 100}% / ${(shape.radiusMm / shape.hMm) * 100}%`,
           boxShadow: "0 20px 45px rgba(0,0,0,0.25)",
           background: "#e5e7eb",
         }}

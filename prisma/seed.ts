@@ -23,9 +23,15 @@ const adapter = new PrismaPg({
 });
 const prisma = new PrismaClient({ adapter });
 
-// Kabro forması: canvas komponenti bu ölçülərə görə çəkir (asset faylı lazım deyil).
-const caseShape = (camera: "single" | "triple" = "triple") =>
-  JSON.stringify({ w: 320, h: 660, radius: 54, camera });
+// Korpusun real fiziki ölçüləri (mm) — canvas bunlara görə miqyaslanır.
+// Hündürlük/en/qalınlıq istehsalçının rəsmi göstəriciləridir; künc radiusu
+// isə rəsmi açıqlanmadığı üçün məhsul şəkillərindən təxmin edilib.
+const caseShape = (
+  wMm: number,
+  hMm: number,
+  radiusMm: number,
+  camera: string,
+) => JSON.stringify({ wMm, hMm, radiusMm, camera });
 
 async function main() {
   // --- Mağazalar (QR vitrinləri) ---
@@ -117,16 +123,46 @@ async function main() {
   }
 
   // --- Telefon modelləri ---
+  // Ölçülər istehsalçıların rəsmi texniki göstəriciləridir (hündürlük × en).
   const phones = [
-    { brand: "Apple", name: "iPhone 15 Pro Max", slug: "iphone-15-pro-max", camera: "triple" },
-    { brand: "Apple", name: "iPhone 15", slug: "iphone-15", camera: "single" },
-    { brand: "Apple", name: "iPhone 14 Pro", slug: "iphone-14-pro", camera: "triple" },
-    { brand: "Apple", name: "iPhone 13", slug: "iphone-13", camera: "single" },
-    { brand: "Samsung", name: "Galaxy S24 Ultra", slug: "galaxy-s24-ultra", camera: "triple" },
-    { brand: "Samsung", name: "Galaxy S23", slug: "galaxy-s23", camera: "triple" },
-    { brand: "Samsung", name: "Galaxy A54", slug: "galaxy-a54", camera: "single" },
-    { brand: "Xiaomi", name: "Redmi Note 13 Pro", slug: "redmi-note-13-pro", camera: "triple" },
+    {
+      brand: "Apple",
+      name: "iPhone 17",
+      slug: "iphone-17",
+      shape: caseShape(71.5, 149.6, 12.0, "ios-pill-2"),
+    },
+    {
+      brand: "Apple",
+      name: "iPhone Air",
+      slug: "iphone-air",
+      shape: caseShape(74.7, 156.2, 12.5, "ios-plateau-1"),
+    },
+    {
+      brand: "Apple",
+      name: "iPhone 17 Pro",
+      slug: "iphone-17-pro",
+      shape: caseShape(71.9, 150.0, 12.0, "ios-plateau-3"),
+    },
+    {
+      brand: "Apple",
+      name: "iPhone 17 Pro Max",
+      slug: "iphone-17-pro-max",
+      shape: caseShape(78.0, 163.4, 13.0, "ios-plateau-3"),
+    },
+    {
+      brand: "Samsung",
+      name: "Galaxy S26",
+      slug: "galaxy-s26",
+      shape: caseShape(71.5, 149.4, 10.5, "galaxy-island-3"),
+    },
+    {
+      brand: "Samsung",
+      name: "Galaxy S26 Ultra",
+      slug: "galaxy-s26-ultra",
+      shape: caseShape(78.1, 163.6, 11.0, "galaxy-ultra"),
+    },
   ];
+
   let order = 0;
   for (const p of phones) {
     await prisma.phoneModel.upsert({
@@ -134,19 +170,27 @@ async function main() {
       update: {
         brand: p.brand,
         name: p.name,
-        printArea: caseShape(p.camera as "single" | "triple"),
+        printArea: p.shape,
         sortOrder: order,
+        active: true,
       },
       create: {
         brand: p.brand,
         name: p.name,
         slug: p.slug,
-        printArea: caseShape(p.camera as "single" | "triple"),
+        printArea: p.shape,
         sortOrder: order,
       },
     });
     order++;
   }
+
+  // Siyahıdan kənar modelləri seçimdən çıxar.
+  // Silmirik — mövcud sifarişlər həmin modellərə istinad edir.
+  await prisma.phoneModel.updateMany({
+    where: { slug: { notIn: phones.map((p) => p.slug) } },
+    data: { active: false },
+  });
 
   // --- Məhsullar: əsas kabro + cross-sell ---
   const products = [

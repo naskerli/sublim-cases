@@ -7,20 +7,39 @@ import type {
   PickupPointDTO,
   ProductDTO,
 } from "@/lib/types";
-import type { CaseShape } from "@/components/order/CaseCanvas";
+import type {
+  CameraLayout,
+  CaseShape,
+} from "@/components/order/CaseCanvas";
 
 export const dynamic = "force-dynamic";
 
+const CAMERA_LAYOUTS: CameraLayout[] = [
+  "ios-pill-2",
+  "ios-plateau-1",
+  "ios-plateau-3",
+  "galaxy-island-3",
+  "galaxy-ultra",
+];
+
 function parseShape(printArea: string | null): CaseShape {
-  const fallback: CaseShape = { w: 320, h: 660, radius: 54, camera: "triple" };
+  // Ölçüsüz köhnə qeydlər üçün neytral fallback (iPhone 17 ölçüləri).
+  const fallback: CaseShape = {
+    wMm: 71.5,
+    hMm: 149.6,
+    radiusMm: 12,
+    camera: "ios-pill-2",
+  };
   if (!printArea) return fallback;
   try {
     const p = JSON.parse(printArea);
     return {
-      w: Number(p.w) || fallback.w,
-      h: Number(p.h) || fallback.h,
-      radius: Number(p.radius) || fallback.radius,
-      camera: p.camera === "single" ? "single" : "triple",
+      wMm: Number(p.wMm) || fallback.wMm,
+      hMm: Number(p.hMm) || fallback.hMm,
+      radiusMm: Number(p.radiusMm) || fallback.radiusMm,
+      camera: CAMERA_LAYOUTS.includes(p.camera)
+        ? (p.camera as CameraLayout)
+        : fallback.camera,
     };
   } catch {
     return fallback;
