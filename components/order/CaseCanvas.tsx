@@ -39,6 +39,9 @@ type Props = {
   transform: PhotoTransform;
   text: TextOptions;
   className?: string;
+  // "width" — eni doldurur (default).
+  // "height" — valideynin hündürlüyünə sığır; scroll-suz ekranlar üçün.
+  fit?: "width" | "height";
 };
 
 const SCALE = 2; // rezolyusiya çarpanı (kəskinlik üçün)
@@ -110,7 +113,10 @@ function drawCamera(
 }
 
 export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
-  function CaseCanvas({ shape, photoSrc, transform, text, className }, ref) {
+  function CaseCanvas(
+    { shape, photoSrc, transform, text, className, fit = "width" },
+    ref,
+  ) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgRef = useRef<HTMLImageElement | null>(null);
 
@@ -235,13 +241,17 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
       },
     }));
 
+    const sizing =
+      fit === "height"
+        ? { height: "100%", width: "auto", maxWidth: "100%" }
+        : { width: "100%", maxWidth: shape.w };
+
     return (
       <canvas
         ref={canvasRef}
         className={className}
         style={{
-          width: "100%",
-          maxWidth: shape.w,
+          ...sizing,
           aspectRatio: `${shape.w} / ${shape.h}`,
           borderRadius: shape.radius,
           boxShadow: "0 20px 45px rgba(0,0,0,0.25)",

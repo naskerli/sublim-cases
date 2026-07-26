@@ -36,6 +36,24 @@ const COLORS = ["#ffffff", "#000000", "#ff3b6b", "#ffd400", "#00d1b2", "#6c5ce7"
 
 const STEPS = ["Model & Şəkil", "Dizayn", "Aksesuarlar", "Çatdırılma", "Təsdiq"];
 
+// Dizayn addımının daxili tabları
+const DESIGN_TABS = [
+  { label: "Tərz", icon: "✨" },
+  { label: "Yerləşdir", icon: "🎯" },
+  { label: "Yazı", icon: "✍️" },
+];
+
+// AI tərzləri — hələ qoşulmayıb, yalnız "Orijinal" aktivdir.
+// AI xidməti qoşulduqda bura model/prompt bağlanacaq.
+const AI_STYLES = [
+  { id: "original", label: "Orijinal", emoji: "🖼️", available: true },
+  { id: "anime", label: "Anime", emoji: "🌸", available: false },
+  { id: "sketch", label: "Sketch", emoji: "✏️", available: false },
+  { id: "cartoon", label: "Cartoon", emoji: "🎨", available: false },
+  { id: "popart", label: "Pop Art", emoji: "💥", available: false },
+  { id: "oil", label: "Yağlı boya", emoji: "🖌️", available: false },
+];
+
 export default function OrderWizard({
   store,
   phoneModels,
@@ -65,6 +83,9 @@ export default function OrderWizard({
     x: 0.5,
     y: 0.8,
   });
+
+  // Dizayn addımının aktiv tabı (0: tərz, 1: yerləşdir, 2: yazı)
+  const [designTab, setDesignTab] = useState(0);
 
   // Step 3
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
@@ -205,6 +226,204 @@ export default function OrderWizard({
 
   const shape = selectedModel?.shape;
 
+  // --- Dizayn addımı: tam ekran, scroll-suz ---
+  // Önizləmə həmişə üstdə görünür, nəzarətlər altdakı sabit ölçülü kartda
+  // tablar arasında dəyişir — beləliklə heç bir dəyişiklik ekrandan çıxmır.
+  if (step === 1 && shape) {
+    return (
+      <div className="flex h-[100dvh] flex-col bg-white">
+        {/* Önizləmə */}
+        <div className="flex min-h-0 flex-1 items-center justify-center px-4 pb-2 pt-4">
+          <CaseCanvas
+            ref={canvasRef}
+            shape={shape}
+            photoSrc={photoSrc}
+            transform={transform}
+            text={text}
+            fit="height"
+          />
+        </div>
+
+        {/* Nəzarət kartı — sabit */}
+        <div className="shrink-0 rounded-t-2xl border-t border-gray-200 bg-white px-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {error && (
+            <div className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Tablar */}
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1">
+            {DESIGN_TABS.map((t, i) => (
+              <button
+                key={t.label}
+                onClick={() => setDesignTab(i)}
+                className={`rounded-lg px-2 py-2 text-xs font-semibold transition-colors ${
+                  designTab === i
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-gray-500"
+                }`}
+              >
+                <span className="mr-1">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab məzmunu — hündürlük sabitdir ki, layout tərpənməsin */}
+          <div className="mt-3 h-[178px] overflow-y-auto sm:h-[196px]">
+            {designTab === 0 && (
+              <div>
+                <div className="grid grid-cols-3 gap-2">
+                  {AI_STYLES.map((s) => (
+                    <button
+                      key={s.id}
+                      disabled={!s.available}
+                      className={`flex flex-col items-center gap-1 rounded-xl border p-2.5 text-[11px] font-medium transition-colors ${
+                        s.available
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                          : "border-gray-200 text-gray-400"
+                      }`}
+                    >
+                      <span className="text-xl">{s.emoji}</span>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-center text-[11px] text-gray-500">
+                  AI tərzlər tezliklə — hazırda orijinal şəkil istifadə olunur.
+                </p>
+              </div>
+            )}
+
+            {designTab === 1 && (
+              <div className="space-y-3 pt-1">
+                <RangeRow
+                  label="Yaxınlaşdır"
+                  min={0.5}
+                  max={2.5}
+                  step={0.01}
+                  value={transform.scale}
+                  onChange={(v) => setTransform((t) => ({ ...t, scale: v }))}
+                />
+                <RangeRow
+                  label="Üfüqi"
+                  min={-1}
+                  max={1}
+                  step={0.01}
+                  value={transform.offsetX}
+                  onChange={(v) => setTransform((t) => ({ ...t, offsetX: v }))}
+                />
+                <RangeRow
+                  label="Şaquli"
+                  min={-1}
+                  max={1}
+                  step={0.01}
+                  value={transform.offsetY}
+                  onChange={(v) => setTransform((t) => ({ ...t, offsetY: v }))}
+                />
+                <button
+                  onClick={() =>
+                    setTransform({ scale: 1, offsetX: 0, offsetY: 0 })
+                  }
+                  className="w-full rounded-lg border border-gray-300 py-2 text-xs font-medium text-gray-600 active:bg-gray-50"
+                >
+                  Sıfırla
+                </button>
+              </div>
+            )}
+
+            {designTab === 2 && (
+              <div className="space-y-2.5 pt-1">
+                <textarea
+                  value={text.text}
+                  onChange={(e) =>
+                    setText((t) => ({ ...t, text: e.target.value }))
+                  }
+                  placeholder="Məsələn: adın, tarix, şüar…"
+                  rows={2}
+                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                />
+                <div className="flex items-center gap-2">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setText((t) => ({ ...t, color: c }))}
+                      className={`h-7 w-7 shrink-0 rounded-full border-2 ${
+                        text.color === c
+                          ? "border-indigo-500"
+                          : "border-gray-200"
+                      }`}
+                      style={{ background: c }}
+                      aria-label={c}
+                    />
+                  ))}
+                  <select
+                    value={text.font}
+                    onChange={(e) =>
+                      setText((t) => ({ ...t, font: e.target.value }))
+                    }
+                    className="ml-auto min-w-0 flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+                  >
+                    {FONTS.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <RangeRow
+                  label="Ölçü"
+                  min={20}
+                  max={80}
+                  step={1}
+                  value={text.size}
+                  onChange={(v) => setText((t) => ({ ...t, size: v }))}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <RangeRow
+                    label="↔"
+                    min={0.1}
+                    max={0.9}
+                    step={0.01}
+                    value={text.x}
+                    onChange={(v) => setText((t) => ({ ...t, x: v }))}
+                    compact
+                  />
+                  <RangeRow
+                    label="↕"
+                    min={0.1}
+                    max={0.95}
+                    step={0.01}
+                    value={text.y}
+                    onChange={(v) => setText((t) => ({ ...t, y: v }))}
+                    compact
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Naviqasiya */}
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              onClick={() => setStep(0)}
+              className="rounded-lg border border-gray-300 px-5 py-3 text-sm font-medium text-gray-700 active:bg-gray-50"
+            >
+              Geri
+            </button>
+            <button
+              onClick={() => setStep(2)}
+              className="flex-1 rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white"
+            >
+              Növbəti
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-lg px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Başlıq */}
@@ -326,114 +545,6 @@ export default function OrderWizard({
                 Növbəti addımda kabronun üzərində görüb tənzimləyəcəksən.
               </p>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* STEP 1 — Dizayn */}
-      {step === 1 && shape && (
-        <div className="space-y-5">
-          <div className="flex justify-center">
-            <div className="w-56">
-              <CaseCanvas
-                ref={canvasRef}
-                shape={shape}
-                photoSrc={photoSrc}
-                transform={transform}
-                text={text}
-              />
-            </div>
-          </div>
-
-          {/* Şəkil miqyası/mövqe */}
-          <div className="space-y-3 rounded-xl bg-gray-50 p-4">
-            <p className="text-sm font-medium text-gray-700">Şəkil</p>
-            <RangeRow
-              label="Yaxınlaşdır"
-              min={0.5}
-              max={2.5}
-              step={0.01}
-              value={transform.scale}
-              onChange={(v) => setTransform((t) => ({ ...t, scale: v }))}
-            />
-            <RangeRow
-              label="Üfüqi"
-              min={-1}
-              max={1}
-              step={0.01}
-              value={transform.offsetX}
-              onChange={(v) => setTransform((t) => ({ ...t, offsetX: v }))}
-            />
-            <RangeRow
-              label="Şaquli"
-              min={-1}
-              max={1}
-              step={0.01}
-              value={transform.offsetY}
-              onChange={(v) => setTransform((t) => ({ ...t, offsetY: v }))}
-            />
-          </div>
-
-          {/* Mətn */}
-          <div className="space-y-3 rounded-xl bg-gray-50 p-4">
-            <p className="text-sm font-medium text-gray-700">Mətn (AI overlay)</p>
-            <textarea
-              value={text.text}
-              onChange={(e) => setText((t) => ({ ...t, text: e.target.value }))}
-              placeholder="Məsələn: adın, tarix, şüar…"
-              rows={2}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setText((t) => ({ ...t, color: c }))}
-                  className={`h-9 w-9 rounded-full border-2 ${
-                    text.color === c ? "border-indigo-500" : "border-gray-200"
-                  }`}
-                  style={{ background: c }}
-                  aria-label={c}
-                />
-              ))}
-              <select
-                value={text.font}
-                onChange={(e) =>
-                  setText((t) => ({ ...t, font: e.target.value }))
-                }
-                className="ml-auto rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-              >
-                {FONTS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <RangeRow
-              label="Ölçü"
-              min={20}
-              max={80}
-              step={1}
-              value={text.size}
-              onChange={(v) => setText((t) => ({ ...t, size: v }))}
-            />
-            <RangeRow
-              label="Mətn — üfüqi"
-              min={0.1}
-              max={0.9}
-              step={0.01}
-              value={text.x}
-              onChange={(v) => setText((t) => ({ ...t, x: v }))}
-            />
-            <RangeRow
-              label="Mətn — şaquli"
-              min={0.1}
-              max={0.95}
-              step={0.01}
-              value={text.y}
-              onChange={(v) => setText((t) => ({ ...t, y: v }))}
-            />
           </div>
         </div>
       )}
@@ -679,6 +790,7 @@ function RangeRow({
   step,
   value,
   onChange,
+  compact = false,
 }: {
   label: string;
   min: number;
@@ -686,10 +798,17 @@ function RangeRow({
   step: number;
   value: number;
   onChange: (v: number) => void;
+  compact?: boolean;
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-24 shrink-0 text-xs text-gray-500">{label}</span>
+      <span
+        className={`shrink-0 text-xs text-gray-500 ${
+          compact ? "w-4 text-center text-sm" : "w-24"
+        }`}
+      >
+        {label}
+      </span>
       <input
         type="range"
         min={min}
