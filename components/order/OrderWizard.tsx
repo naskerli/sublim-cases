@@ -68,6 +68,7 @@ export default function OrderWizard({
   const [modelId, setModelId] = useState("");
   const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   // Step 2
   const [transform, setTransform] = useState<PhotoTransform>({
@@ -134,9 +135,8 @@ export default function OrderWizard({
   );
   const total = caseProduct.price + addonsTotal + SHIPPING_FEE;
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Həm fayl seçimi, həm drag & drop bu funksiyadan keçir.
+  function acceptFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setError("Zəhmət olmasa şəkil faylı seçin.");
       return;
@@ -152,6 +152,11 @@ export default function OrderWizard({
     };
     reader.readAsDataURL(file);
     setError(null);
+  }
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) acceptFile(file);
   }
 
   function canNext(): boolean {
@@ -225,6 +230,181 @@ export default function OrderWizard({
   }
 
   const shape = selectedModel?.shape;
+
+  // --- Başlanğıc addımı: model seçimi + şəkil yükləmə (tam ekran, scroll-suz) ---
+  if (step === 0) {
+    return (
+      <div className="flex h-[100dvh] flex-col bg-white">
+        {/* Başlıq */}
+        <div className="shrink-0 px-4 pt-5 text-center">
+          <span className="inline-block rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+            {store.name}
+          </span>
+          <h1 className="mt-2 text-xl font-bold tracking-tight text-gray-900">
+            Özəl kabronu yarat
+          </h1>
+        </div>
+
+        {/* Addım göstəricisi */}
+        <div className="shrink-0 px-4 pt-3">
+          <div className="flex gap-1">
+            {STEPS.map((s, i) => (
+              <div
+                key={s}
+                className={`h-1 flex-1 rounded-full transition-colors ${
+                  i <= step ? "bg-indigo-500" : "bg-gray-200"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Marka */}
+        <div className="shrink-0 px-4 pt-4">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Marka
+          </p>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {brands.map((b) => (
+              <button
+                key={b}
+                onClick={() => {
+                  setBrand(b);
+                  setModelId("");
+                }}
+                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
+                  brand === b
+                    ? "bg-gray-900 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 active:bg-gray-200"
+                }`}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Model */}
+        <div className="shrink-0 px-4 pt-3">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Model
+          </p>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {modelsForBrand.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setModelId(m.id)}
+                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  modelId === m.id
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm"
+                    : "border-gray-200 text-gray-600 active:bg-gray-50"
+                }`}
+              >
+                {m.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Şəkil yükləmə — qalan sahəni doldurur */}
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-2 pt-4">
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) acceptFile(file);
+            }}
+            className={`relative flex min-h-0 flex-1 cursor-pointer rounded-2xl p-[2px] transition-transform ${
+              photoSrc
+                ? "bg-emerald-400"
+                : `sc-anim-gradient bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-sky-500 ${
+                    dragging ? "scale-[1.02]" : ""
+                  }`
+            }`}
+          >
+            <div
+              className={`flex h-full w-full flex-col items-center justify-center rounded-[14px] px-5 text-center transition-colors ${
+                photoSrc ? "bg-emerald-50" : dragging ? "bg-indigo-50" : "bg-white"
+              }`}
+            >
+              {photoSrc ? (
+                <>
+                  <span className="sc-pop text-5xl">✅</span>
+                  <span className="mt-3 text-base font-bold text-gray-900">
+                    Şəkil hazırdır
+                  </span>
+                  {photoName && (
+                    <span className="mt-1 max-w-full truncate text-xs text-gray-500">
+                      {photoName}
+                    </span>
+                  )}
+                  <span className="mt-4 rounded-full bg-white px-4 py-2 text-xs font-semibold text-indigo-600 shadow-sm">
+                    Başqa şəkil seç
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="relative flex h-20 w-20 items-center justify-center">
+                    <span className="sc-pulse-ring absolute inset-0 rounded-full bg-indigo-400/30" />
+                    <span className="sc-bob relative text-5xl">📸</span>
+                  </span>
+                  <span className="mt-4 text-base font-bold text-gray-900">
+                    Şəklini yüklə
+                  </span>
+                  <span className="mt-1 text-sm text-gray-500">
+                    Toxun və ya şəkli bura sürüşdür
+                  </span>
+                  <span className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
+                    <span>JPG · PNG</span>
+                    <span>·</span>
+                    <span>maksimum 10 MB</span>
+                  </span>
+                </>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onFile}
+            />
+          </label>
+
+          <p className="mt-2 shrink-0 text-center text-[11px] text-gray-400">
+            {photoSrc
+              ? "Növbəti addımda kabronun üzərində tənzimləyəcəksən"
+              : "Ən yaxşı nəticə üçün keyfiyyətli, işıqlı şəkil seç"}
+          </p>
+        </div>
+
+        {/* Naviqasiya */}
+        <div className="shrink-0 border-t border-gray-100 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {error && (
+            <div className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              {error}
+            </div>
+          )}
+          <button
+            disabled={!canNext()}
+            onClick={() => setStep(1)}
+            className="w-full rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all disabled:opacity-40 disabled:shadow-none"
+          >
+            {!modelId
+              ? "Telefon modelini seç"
+              : !photoSrc
+                ? "Şəkil yüklə"
+                : "Dizayna keç →"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // --- Dizayn addımı: tam ekran, scroll-suz ---
   // Önizləmə həmişə üstdə görünür, nəzarətlər altdakı sabit ölçülü kartda
@@ -460,92 +640,6 @@ export default function OrderWizard({
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
-        </div>
-      )}
-
-      {/* STEP 0 — Model & Şəkil */}
-      {step === 0 && (
-        <div className="space-y-5">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Marka
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {brands.map((b) => (
-                <button
-                  key={b}
-                  onClick={() => {
-                    setBrand(b);
-                    setModelId("");
-                  }}
-                  className={`rounded-full px-4 py-2 text-sm ${
-                    brand === b
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700 active:bg-gray-200"
-                  }`}
-                >
-                  {b}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Model
-            </label>
-            <select
-              value={modelId}
-              onChange={(e) => setModelId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
-            >
-              <option value="">Seçin…</option>
-              {modelsForBrand.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Şəkil yüklə
-            </label>
-            <label
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
-                photoSrc
-                  ? "border-emerald-300 bg-emerald-50"
-                  : "border-gray-300 bg-gray-50 hover:border-indigo-400"
-              }`}
-            >
-              <span className="text-3xl">{photoSrc ? "✅" : "📷"}</span>
-              <span className="mt-2 text-sm font-medium text-gray-700">
-                {photoSrc ? "Şəkil seçildi" : "Şəkil seçmək üçün toxun"}
-              </span>
-              {photoName && (
-                <span className="mt-1 max-w-full truncate px-2 text-xs text-gray-500">
-                  {photoName}
-                </span>
-              )}
-              <span className="mt-2 text-xs text-indigo-600">
-                {photoSrc
-                  ? "Dəyişdirmək üçün toxun"
-                  : "JPG, PNG · maksimum 10 MB"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={onFile}
-              />
-            </label>
-            {photoSrc && (
-              <p className="mt-2 text-center text-xs text-gray-500">
-                Növbəti addımda kabronun üzərində görüb tənzimləyəcəksən.
-              </p>
-            )}
-          </div>
         </div>
       )}
 
