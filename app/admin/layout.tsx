@@ -19,6 +19,7 @@ export default async function AdminLayout({
         { href: "/admin/orders", label: "Sifarişlər" },
         { href: "/admin/stores", label: "Mağazalar" },
         { href: "/admin/qr", label: "QR stendlər" },
+        { href: "/admin/payouts", label: "Ödənişlər" },
       ]}
     >
       {children}

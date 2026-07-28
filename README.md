@@ -64,7 +64,7 @@ təyin etmək kifayətdir.
 |-----|-------|
 | **Müştəri** (girişsiz) | Landing + QR-dan açılan sifariş sihirbazı |
 | **PLATFORM_ADMIN** (biz) | Bütün mağazalar/sifarişlər, mağaza qeydiyyatı, admin təyini, QR generasiya |
-| **STORE_ADMIN** (mağaza) | Yalnız öz mağazasının sifarişləri, qazancı və QR kodu |
+| **STORE_ADMIN** (mağaza) | Yalnız öz mağazasının sifarişləri, komissiya balansı, ödəniş tarixçəsi və QR kodu |
 
 ## Əsas axın
 
@@ -81,7 +81,9 @@ təyin etmək kifayətdir.
 | `/admin/stores/<id>` | Mağaza detalı: statistika, QR, admin təyini | platforma |
 | `/admin/qr` | QR stendlər: partiya yaratma, mağazaya təyinat, PNG | platforma |
 | `/admin/qr/print` | Toplu çap vərəqi (brauzerdən çap) | platforma |
+| `/admin/payouts` | Mağaza komissiya balansları və nağd ödəniş qeydi | platforma |
 | `/store` | Mağazanın öz sifarişləri və qazancı | mağaza |
+| `/store/payouts` | Öz komissiya balansı, hədd göstəricisi, alınmış ödənişlər | mağaza |
 | `/store/qr` | Mağazaya təyin olunmuş stendlər və kodları | mağaza |
 
 ### Demo hesablar (seed)
@@ -107,13 +109,17 @@ təyin etmək kifayətdir.
 - `DELETE /api/admin/qr/batch` — partiyanı silir; sifarişi olan kodlar saxlanılır.
 - `GET /api/admin/qr/<id>/png?side=front|back` — ön (müştəri) və ya arxa
   (satıcı) QR-ın 1024px PNG-si.
+- `POST /api/admin/payouts` — mağazaya ödənişi qeydə alır. Məbləğ **serverdə**
+  ödənilməmiş sifarişlərdən hesablanır (admin əl ilə yazmır) və hər şey bir
+  transaksiyada bağlanır.
 
 ## Verilənlər modeli
 
 `Store` (komissiya nisbəti), `QrCode` (stend kodu, partiya, mağazaya təyinat),
 `User` (rol + mağaza bağlantısı), `Session`,
 `PhoneModel` (kabro forması JSON), `Product` (`CASE` / `ADDON`),
-`PickupPoint`, `Order` (+ mağaza attribution, qiymət snapshot-ları, komissiya), `OrderAddon`.
+`PickupPoint`, `Order` (+ mağaza attribution, qiymət snapshot-ları, komissiya),
+`OrderAddon`, `Payout` (mağazaya edilən komissiya hesablaşması).
 
 Parollar `scrypt` ilə hash-lənir (salt + timing-safe müqayisə), sessiyalar bazada saxlanılır.
 
@@ -145,9 +151,41 @@ Sifarişdə həm `storeId` (komissiya üçün snapshot), həm də `qrCodeId` sax
 stend sonradan başqa mağazaya keçsə də köhnə sifarişlərin attribution-ı pozulmur.
 Təyin olunmamış kod skan edilsə sifariş qəbul edilmir; müştəriyə kod göstərilir.
 
+## Mağaza ödənişləri (komissiya hesablaşması)
+
+Müştəri ödənişi bizə onlayn gəlir; mağazanın komissiyası isə **nağd, əldən**
+verilir. Sistem bu hesablaşmanı izləyir:
+
+1. Hər ləğv edilməmiş sifariş mağaza üçün komissiya borcu yaradır
+   (`Order.commissionAmount`, sifariş anındakı nisbətlə snapshot).
+2. Borc yığılır. `/admin/payouts`-da hər mağazanın cari balansı görünür;
+   **50 ₼** həddini keçən mağazalar «Ödənişə hazır» kimi yuxarıda işarələnir.
+3. Pul veriləndə admin «Ödənişi qeyd et» edir. Həmin anda mağazanın
+   ödənilməmiş **bütün** sifarişləri bir `Payout` qeydinə bağlanır və balans
+   sıfırlanır.
+4. Ondan sonrakı sifarişlər yenidən sıfırdan yığılmağa başlayır.
+
+Vacib detallar:
+
+- **Məbləği admin yazmır** — sistem bağlanan sifarişlərdən hesablayır, ona görə
+  hesabat həmişə sifarişlərlə uzlaşır.
+- Ödəniş `prisma.$transaction` daxilində yazılır və bağlanacaq sifarişlər də
+  transaksiya içində oxunur — eyni komissiya iki dəfə ödənilə bilmir.
+- Hər `Payout` hansı sifarişləri örtdüyünü saxlayır, üstəlik üsul
+  (`CASH` / `BANK`), qeyd və ödənişi qeyd edən admin yazılır.
+- Ləğv edilmiş sifariş komissiya yaratmır.
+- Mağaza `/store/payouts`-da öz balansını, həddə nə qədər qaldığını və
+  aldığı ödənişlərin tarixçəsini görür — beləliklə hesablaşma iki tərəf üçün
+  də şəffafdır.
+
+> Qeyd: hazırda komissiya **ləğv edilməmiş bütün** sifarişlərdən yığılır
+> (`paymentStatus` yox, `status` əsas götürülür). Stripe webhook qoşulandan
+> sonra bunu «yalnız ödənişi təsdiqlənmiş sifarişlər» qaydasına keçirmək olar —
+> dəyişiklik tək yerdə, `lib/payouts.ts` → `payableWhere` içindədir.
+
 ## Növbəti mərhələlər (roadmap)
 
 - Canvas mockup → **generativ AI** render (fotorealistik).
 - Kargo şirkəti API inteqrasiyası (ünvana görə real ən yaxın pickup məntəqəsi).
 - Şəkillərə ölçü optimallaşdırması (yükləmədən əvvəl kiçiltmə/sıxma).
-- Komissiya ödəniş axını (hesabat → ödəniş qeydi).
+- Stripe webhook — `paymentStatus` avtomatik `PAID` olsun.

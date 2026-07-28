@@ -31,6 +31,33 @@ model Store {
   orders  Order[]
   users   User[]
   qrCodes QrCode[]
+  payouts Payout[]
+}
+
+// Mağazaya nağd ödənilən komissiya hesablaşması.
+// Bir ödəniş konkret sifarişlər toplusunu bağlayır — beləliklə eyni
+// komissiya iki dəfə ödənilə bilmir və hər ödənişin nəyi örtdüyü qalır.
+model Payout {
+  id      String @id @default(cuid())
+  store   Store  @relation(fields: [storeId], references: [id])
+  storeId String
+
+  // Ödənilən məbləğ = bağlanan sifarişlərin komissiyalarının cəmi
+  amount Float
+  // "CASH" | "BANK"
+  method String  @default("CASH")
+  note   String?
+
+  // Ödənişi qeydə alan platforma admini
+  recordedBy      String?
+  recordedByEmail String?
+
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  orders Order[]
+
+  @@index([storeId])
 }
 
 // Fiziki stend üzərindəki QR kod.
@@ -148,6 +175,11 @@ model Order {
   qrCode   QrCode? @relation(fields: [qrCodeId], references: [id])
   qrCodeId String?
 
+  // Bu sifarişin komissiyası hansı ödənişlə bağlanıb.
+  // null → hələ mağazaya ödənilməyib (cari borcun bir hissəsidir).
+  payout   Payout? @relation(fields: [payoutId], references: [id])
+  payoutId String?
+
   phoneModel   PhoneModel @relation(fields: [phoneModelId], references: [id])
   phoneModelId String
 
@@ -185,6 +217,8 @@ model Order {
   updatedAt DateTime @updatedAt
 
   addons OrderAddon[]
+
+  @@index([payoutId])
 }
 
 // Sifarişə əlavə edilən cross-sell məhsullar (qiymət snapshot ilə).
