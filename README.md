@@ -71,7 +71,8 @@ təyin etmək kifayətdir.
 | Yol | Təyinat | Giriş |
 |-----|---------|-------|
 | `/` | Landing page | açıq |
-| `/q/<code>` | **Stend QR-ının hədəfi** — kod hansı mağazaya təyin olunubsa sifariş ora yazılır | açıq |
+| `/q/<code>` | **Stendin ÖN QR-ı** — müştəri skan edir, sifariş həmin mağazaya yazılır | açıq |
+| `/m/<staffCode>` | **Stendin ARXA QR-ı** — satıcı skan edir, şifrə ilə hesabata girir | açıq |
 | `/s/<slug>` | Birbaşa mağaza linki (daxili test / köhnə linklər) | açıq |
 | `/login` | Vahid giriş — rola görə yönləndirir | açıq |
 | `/admin` | Platforma icmalı (dövriyyə, komissiya, xalis gəlir) | platforma |
@@ -95,6 +96,8 @@ təyin etmək kifayətdir.
   Kart seçilib Stripe konfiqurasiya olunubsa Checkout URL qaytarır.
 - `PATCH /api/orders/<id>` — status yeniləyir (mağaza admini yalnız öz sifarişlərini).
 - `POST/DELETE /api/auth/login` — sessiya yaradır/bitirir (httpOnly cookie).
+- `POST /api/auth/stand-login` — stendin arxa kodu + şifrə ilə giriş
+  (kod mağazanı müəyyən edir; sürət məhdudiyyəti tətbiq olunur).
 - `POST /api/admin/stores` — mağaza qeydiyyatı (+ istəyə bağlı admin hesabı).
 - `POST /api/admin/stores/<id>/users` — mövcud mağazaya admin təyin edir.
 - `GET /api/qr/<slug>` — mağaza linki üçün 1024px QR PNG (rola görə məhdudlaşır).
@@ -115,10 +118,25 @@ Parollar `scrypt` ilə hash-lənir (salt + timing-safe müqayisə), sessiyalar b
 
 Fiziki stendlər mağaza tapılmadan **əvvəl** çap olunur. Axın belədir:
 
-1. `/admin/qr` → partiya yaradılır (məs. 50 kod, `2026-07-A`)
-2. `/admin/qr/print` → vərəq çap olunur, kodlar stendlərə yapışdırılır
-3. Mağaza ilə razılaşdıqda kod həmin mağazaya təyin edilir
-4. Müştəri skan edir → `/q/<code>` → sifariş həmin mağazaya yazılır
+Hər stenddə **iki** QR olur:
+
+| Yer | Kod | Kim skan edir | Nə açılır |
+|-----|-----|---------------|-----------|
+| Ön | `code` | Müştəri | Sifariş sihirbazı |
+| Arxa | `staffCode` | Satıcı | Şifrə → satış hesabatı və komissiya |
+
+1. `/admin/qr` → partiya yaradılır (məs. 50 stend, `2026-07-A`) — hər stend
+   üçün iki kod avtomatik yaranır
+2. `/admin/qr/print` → vərəq çap olunur; hər stendin ön/arxa kodu etiketlə
+   yan-yana verilir
+3. Mağaza ilə razılaşdıqda stend həmin mağazaya təyin edilir — hər iki kod
+   eyni anda işə düşür
+4. Müştəri ön kodu skan edir → sifariş mağazaya yazılır
+5. Satıcı arxa kodu skan edir → şifrə → öz hesabatı
+
+Arxa kod ön koddan ayrıdır: müştəri stendin üzündəki kodu görsə belə
+hesabat linkini təxmin edə bilmir. Girişdə yalnız şifrə istənilir (kod
+mağazanı özü müəyyən edir), ona görə uğursuz cəhdlər məhdudlaşdırılır.
 
 Sifarişdə həm `storeId` (komissiya üçün snapshot), həm də `qrCodeId` saxlanılır —
 stend sonradan başqa mağazaya keçsə də köhnə sifarişlərin attribution-ı pozulmur.

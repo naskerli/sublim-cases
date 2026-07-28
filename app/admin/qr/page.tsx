@@ -117,7 +117,8 @@ export default async function AdminQrPage({
           <table className="w-full text-left text-sm">
             <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
               <tr>
-                <th className="whitespace-nowrap px-4 py-3">Kod</th>
+                <th className="whitespace-nowrap px-4 py-3">Ön (müştəri)</th>
+                <th className="whitespace-nowrap px-4 py-3">Arxa (satıcı)</th>
                 <th className="whitespace-nowrap px-4 py-3">Mağaza</th>
                 <th className="whitespace-nowrap px-4 py-3">Partiya</th>
                 <th className="whitespace-nowrap px-4 py-3">Sifariş</th>
@@ -134,6 +135,11 @@ export default async function AdminQrPage({
                   <td className="whitespace-nowrap px-4 py-3">
                     <span className="font-mono text-sm font-bold tracking-widest text-gray-900">
                       {c.code}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <span className="font-mono text-sm tracking-widest text-gray-500">
+                      {c.staffCode ?? "—"}
                     </span>
                   </td>
                   <td className="min-w-[190px] px-4 py-3">
@@ -168,9 +174,16 @@ export default async function AdminQrPage({
         </div>
       )}
 
-      <p className="mt-4 text-xs text-gray-400">
-        Skan ünvanı: <span className="font-mono">{standUrl(baseUrl, "KOD")}</span>
-      </p>
+      <div className="mt-4 space-y-1 text-xs text-gray-400">
+        <p>
+          Müştəri (ön):{" "}
+          <span className="font-mono">{standUrl(baseUrl, "KOD")}</span>
+        </p>
+        <p>
+          Satıcı (arxa):{" "}
+          <span className="font-mono">{baseUrl}/m/KOD</span>
+        </p>
+      </div>
     </div>
   );
 }

@@ -18,6 +18,16 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 // Seed deploy zamanı işləyir — miqrasiyalarla eyni bağlantıdan getsin.
+// lib/qrcodes.ts ilə eyni əlifba (qarışan simvollar çıxarılıb)
+const CODE_ALPHABET = "23456789ACDEFGHJKMNPQRSTWXYZ";
+function randomCode(): string {
+  let out = "";
+  for (let i = 0; i < 6; i++) {
+    out += CODE_ALPHABET[randomBytes(1)[0] % CODE_ALPHABET.length];
+  }
+  return out;
+}
+
 const adapter = new PrismaPg({
   connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL,
 });
@@ -258,6 +268,25 @@ async function main() {
       update: pt,
       create: pt,
     });
+  }
+
+  // Köhnə QR sətirlərində arxa (satıcı) kodu yoxdursa doldur
+  const missingStaff = await prisma.qrCode.findMany({
+    where: { staffCode: null },
+    select: { id: true },
+  });
+  for (const row of missingStaff) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        await prisma.qrCode.update({
+          where: { id: row.id },
+          data: { staffCode: randomCode() },
+        });
+        break;
+      } catch {
+        // toqquşma — yenidən cəhd
+      }
+    }
   }
 
   console.log("Seed tamamlandı:");

@@ -36,6 +36,10 @@ export default async function QrPrintPage({
       code: c.code,
       url: standUrl(baseUrl, c.code),
       qr: await qrDataUrl(standUrl(baseUrl, c.code)),
+      staffCode: c.staffCode,
+      staffQr: c.staffCode
+        ? await qrDataUrl(`${baseUrl}/m/${c.staffCode}`)
+        : null,
     })),
   );
 
@@ -60,22 +64,54 @@ export default async function QrPrintPage({
       {items.length === 0 ? (
         <p className="text-center text-gray-400">Bu seçimdə kod yoxdur.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 print:grid-cols-3 print:gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 print:grid-cols-2 print:gap-3">
           {items.map((it) => (
             <div
               key={it.code}
-              className="flex break-inside-avoid flex-col items-center rounded-lg border border-gray-300 p-3"
+              className="break-inside-avoid rounded-lg border border-gray-300 p-3"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={it.qr}
-                alt={it.code}
-                className="h-auto w-full max-w-[150px]"
-              />
-              <p className="mt-2 font-mono text-base font-bold tracking-[0.2em] text-gray-900">
-                {it.code}
+              <div className="grid grid-cols-2 gap-3">
+                {/* ÖN — müştəri */}
+                <div className="flex flex-col items-center rounded-md bg-gray-50 p-2">
+                  <span className="mb-1 rounded bg-indigo-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                    Ön · Müştəri
+                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={it.qr}
+                    alt={it.code}
+                    className="h-auto w-full max-w-[130px]"
+                  />
+                  <p className="mt-1 font-mono text-sm font-bold tracking-[0.18em] text-gray-900">
+                    {it.code}
+                  </p>
+                </div>
+
+                {/* ARXA — satıcı */}
+                <div className="flex flex-col items-center rounded-md bg-gray-50 p-2">
+                  <span className="mb-1 rounded bg-gray-900 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                    Arxa · Satıcı
+                  </span>
+                  {it.staffQr ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={it.staffQr}
+                        alt={it.staffCode ?? ""}
+                        className="h-auto w-full max-w-[130px]"
+                      />
+                      <p className="mt-1 font-mono text-sm font-bold tracking-[0.18em] text-gray-900">
+                        {it.staffCode}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="py-10 text-xs text-gray-400">kod yoxdur</p>
+                  )}
+                </div>
+              </div>
+              <p className="mt-2 text-center text-[9px] text-gray-400">
+                {it.url}
               </p>
-              <p className="mt-0.5 text-[9px] text-gray-400">{it.url}</p>
             </div>
           ))}
         </div>

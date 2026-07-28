@@ -39,8 +39,11 @@ model Store {
 // edilir. Müştəri /q/<code> ünvanına düşür.
 model QrCode {
   id         String    @id @default(cuid())
-  // Stenddə çap olunan qısa kod (məs. "K7M2QP") — böyük hərflərlə saxlanılır
+  // Stendin ÖN tərəfindəki kod — müştəri skan edir, sifariş səhifəsi açılır
   code       String    @unique
+  // Stendin ARXA tərəfindəki kod — satıcı skan edir, şifrə ilə hesabata girir.
+  // Ön koddan ayrıdır ki, müştəri onu görüb hesabata cəhd edə bilməsin.
+  staffCode  String?   @unique
   // Çap partiyası (məs. "2026-07-A") — toplu çap və izləmə üçün
   batch      String?
   note       String?
