@@ -65,3 +65,35 @@ export async function PATCH(
   await prisma.qrCode.update({ where: { id }, data });
   return NextResponse.json({ ok: true });
 }
+
+// Tək kodu silir. Sifarişi olan kod silinmir — tarixçə qorunur.
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const user = await getSessionUser();
+  if (!user || user.role !== Role.PLATFORM_ADMIN) {
+    return NextResponse.json({ error: "İcazə yoxdur." }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const qr = await prisma.qrCode.findUnique({
+    where: { id },
+    select: { id: true, _count: { select: { orders: true } } },
+  });
+  if (!qr) {
+    return NextResponse.json({ error: "Kod tapılmadı." }, { status: 404 });
+  }
+  if (qr._count.orders > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Bu koddan sifariş gəlib — silinə bilməz. Əvəzinə deaktiv edin.",
+      },
+      { status: 409 },
+    );
+  }
+
+  await prisma.qrCode.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}

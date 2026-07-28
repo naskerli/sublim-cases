@@ -4,6 +4,7 @@ import { getBaseUrl, standUrl } from "@/lib/qr";
 import StatCards from "@/components/panel/StatCards";
 import GenerateBatch from "./GenerateBatch";
 import AssignStore from "./AssignStore";
+import DeleteBatch from "./DeleteBatch";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,14 @@ export default async function AdminQrPage({
   const batches = batchRows
     .map((b) => b.batch)
     .filter((b): b is string => !!b);
+
+  // Seçilmiş partiya üçün silmə statistikası
+  const batchStats = sp.batch
+    ? {
+        total: codes.length,
+        withOrders: codes.filter((c) => c._count.orders > 0).length,
+      }
+    : null;
 
   return (
     <div>
@@ -108,6 +117,16 @@ export default async function AdminQrPage({
         )}
       </div>
 
+      {sp.batch && batchStats && (
+        <div className="mb-4 flex justify-end">
+          <DeleteBatch
+            batch={sp.batch}
+            total={batchStats.total}
+            withOrders={batchStats.withOrders}
+          />
+        </div>
+      )}
+
       {codes.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white px-4 py-10 text-center text-gray-400">
           Kod yoxdur. &quot;Yeni partiya&quot; ilə başlayın.
@@ -122,8 +141,7 @@ export default async function AdminQrPage({
                 <th className="whitespace-nowrap px-4 py-3">Mağaza</th>
                 <th className="whitespace-nowrap px-4 py-3">Partiya</th>
                 <th className="whitespace-nowrap px-4 py-3">Sifariş</th>
-                <th className="whitespace-nowrap px-4 py-3">Link</th>
-                <th className="whitespace-nowrap px-4 py-3" />
+                <th className="whitespace-nowrap px-4 py-3">QR yüklə</th>
               </tr>
             </thead>
             <tbody>
@@ -155,17 +173,25 @@ export default async function AdminQrPage({
                   <td className="whitespace-nowrap px-4 py-3 text-gray-600">
                     {c._count.orders}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-500">
-                    /q/{c.code}
-                  </td>
                   <td className="whitespace-nowrap px-4 py-3">
-                    <a
-                      href={`/api/admin/qr/${c.id}/png`}
-                      download
-                      className="text-xs font-semibold text-indigo-600"
-                    >
-                      PNG
-                    </a>
+                    <div className="flex gap-2">
+                      <a
+                        href={`/api/admin/qr/${c.id}/png?side=front`}
+                        download
+                        className="rounded border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700"
+                      >
+                        Ön
+                      </a>
+                      {c.staffCode && (
+                        <a
+                          href={`/api/admin/qr/${c.id}/png?side=back`}
+                          download
+                          className="rounded border border-gray-300 bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-700"
+                        >
+                          Arxa
+                        </a>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

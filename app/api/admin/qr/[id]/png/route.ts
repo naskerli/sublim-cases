@@ -6,8 +6,10 @@ import { getBaseUrl, qrPngBuffer, standUrl } from "@/lib/qr";
 export const runtime = "nodejs";
 
 // Stend maketi üçün yüksək rezolyusiyalı QR PNG.
+// ?side=front (default) — müştəri QR-ı
+// ?side=back            — satıcı QR-ı
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await getSessionUser();
@@ -21,12 +23,30 @@ export async function GET(
     return NextResponse.json({ error: "Kod tapılmadı." }, { status: 404 });
   }
 
-  const png = await qrPngBuffer(standUrl(await getBaseUrl(), qr.code));
+  const side = new URL(req.url).searchParams.get("side") === "back"
+    ? "back"
+    : "front";
+
+  if (side === "back" && !qr.staffCode) {
+    return NextResponse.json(
+      { error: "Bu stendin satıcı kodu yoxdur." },
+      { status: 404 },
+    );
+  }
+
+  const baseUrl = await getBaseUrl();
+  const target =
+    side === "back"
+      ? `${baseUrl}/m/${qr.staffCode}`
+      : standUrl(baseUrl, qr.code);
+  const label = side === "back" ? `arxa-${qr.staffCode}` : `on-${qr.code}`;
+
+  const png = await qrPngBuffer(target);
 
   return new NextResponse(new Uint8Array(png), {
     headers: {
       "Content-Type": "image/png",
-      "Content-Disposition": `attachment; filename="stend-${qr.code}.png"`,
+      "Content-Disposition": `attachment; filename="stend-${label}.png"`,
       "Cache-Control": "no-store",
     },
   });

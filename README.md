@@ -103,7 +103,10 @@ təyin etmək kifayətdir.
 - `GET /api/qr/<slug>` — mağaza linki üçün 1024px QR PNG (rola görə məhdudlaşır).
 - `POST /api/admin/qr` — yeni QR kod partiyası yaradır (mağazasız).
 - `PATCH /api/admin/qr/<id>` — kodu mağazaya təyin edir / geri alır / deaktiv edir.
-- `GET /api/admin/qr/<id>/png` — stend maketi üçün 1024px QR PNG.
+- `DELETE /api/admin/qr/<id>` — tək kodu silir (sifarişi varsa 409 qaytarır).
+- `DELETE /api/admin/qr/batch` — partiyanı silir; sifarişi olan kodlar saxlanılır.
+- `GET /api/admin/qr/<id>/png?side=front|back` — ön (müştəri) və ya arxa
+  (satıcı) QR-ın 1024px PNG-si.
 
 ## Verilənlər modeli
 
