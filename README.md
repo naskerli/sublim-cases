@@ -71,14 +71,17 @@ təyin etmək kifayətdir.
 | Yol | Təyinat | Giriş |
 |-----|---------|-------|
 | `/` | Landing page | açıq |
-| `/s/<slug>` | **Müştəri sihirbazı** — QR hədəfi (model→dizayn→aksesuar→çatdırılma→təsdiq) | açıq |
+| `/q/<code>` | **Stend QR-ının hədəfi** — kod hansı mağazaya təyin olunubsa sifariş ora yazılır | açıq |
+| `/s/<slug>` | Birbaşa mağaza linki (daxili test / köhnə linklər) | açıq |
 | `/login` | Vahid giriş — rola görə yönləndirir | açıq |
 | `/admin` | Platforma icmalı (dövriyyə, komissiya, xalis gəlir) | platforma |
 | `/admin/orders` · `/admin/orders/<id>` | Bütün sifarişlər + status idarəetməsi | platforma |
 | `/admin/stores` · `/admin/stores/new` | Mağaza siyahısı və qeydiyyatı | platforma |
 | `/admin/stores/<id>` | Mağaza detalı: statistika, QR, admin təyini | platforma |
+| `/admin/qr` | QR stendlər: partiya yaratma, mağazaya təyinat, PNG | platforma |
+| `/admin/qr/print` | Toplu çap vərəqi (brauzerdən çap) | platforma |
 | `/store` | Mağazanın öz sifarişləri və qazancı | mağaza |
-| `/store/qr` | Mağazanın öz QR kodu (çap üçün yükləmə) | mağaza |
+| `/store/qr` | Mağazaya təyin olunmuş stendlər və kodları | mağaza |
 
 ### Demo hesablar (seed)
 
@@ -94,20 +97,36 @@ təyin etmək kifayətdir.
 - `POST/DELETE /api/auth/login` — sessiya yaradır/bitirir (httpOnly cookie).
 - `POST /api/admin/stores` — mağaza qeydiyyatı (+ istəyə bağlı admin hesabı).
 - `POST /api/admin/stores/<id>/users` — mövcud mağazaya admin təyin edir.
-- `GET /api/qr/<slug>` — çap üçün 1024px QR PNG (rola görə məhdudlaşır).
+- `GET /api/qr/<slug>` — mağaza linki üçün 1024px QR PNG (rola görə məhdudlaşır).
+- `POST /api/admin/qr` — yeni QR kod partiyası yaradır (mağazasız).
+- `PATCH /api/admin/qr/<id>` — kodu mağazaya təyin edir / geri alır / deaktiv edir.
+- `GET /api/admin/qr/<id>/png` — stend maketi üçün 1024px QR PNG.
 
 ## Verilənlər modeli
 
-`Store` (QR slug + komissiya nisbəti), `User` (rol + mağaza bağlantısı), `Session`,
+`Store` (komissiya nisbəti), `QrCode` (stend kodu, partiya, mağazaya təyinat),
+`User` (rol + mağaza bağlantısı), `Session`,
 `PhoneModel` (kabro forması JSON), `Product` (`CASE` / `ADDON`),
 `PickupPoint`, `Order` (+ mağaza attribution, qiymət snapshot-ları, komissiya), `OrderAddon`.
 
 Parollar `scrypt` ilə hash-lənir (salt + timing-safe müqayisə), sessiyalar bazada saxlanılır.
+
+### QR stendlər
+
+Fiziki stendlər mağaza tapılmadan **əvvəl** çap olunur. Axın belədir:
+
+1. `/admin/qr` → partiya yaradılır (məs. 50 kod, `2026-07-A`)
+2. `/admin/qr/print` → vərəq çap olunur, kodlar stendlərə yapışdırılır
+3. Mağaza ilə razılaşdıqda kod həmin mağazaya təyin edilir
+4. Müştəri skan edir → `/q/<code>` → sifariş həmin mağazaya yazılır
+
+Sifarişdə həm `storeId` (komissiya üçün snapshot), həm də `qrCodeId` saxlanılır —
+stend sonradan başqa mağazaya keçsə də köhnə sifarişlərin attribution-ı pozulmur.
+Təyin olunmamış kod skan edilsə sifariş qəbul edilmir; müştəriyə kod göstərilir.
 
 ## Növbəti mərhələlər (roadmap)
 
 - Canvas mockup → **generativ AI** render (fotorealistik).
 - Kargo şirkəti API inteqrasiyası (ünvana görə real ən yaxın pickup məntəqəsi).
 - Şəkillərə ölçü optimallaşdırması (yükləmədən əvvəl kiçiltmə/sıxma).
-- Mağaza öz-özünə idarəetmə paneli + komissiya ödəniş axını.
-- İstehsalda Postgres-ə keçid.
+- Komissiya ödəniş axını (hesabat → ödəniş qeydi).

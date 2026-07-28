@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { saveDataUrl } from "@/lib/storage";
 import { generateOrderNumber } from "@/lib/format";
+import { normalizeCode } from "@/lib/qrcodes";
 import { createCardCheckout } from "@/lib/payment";
 import { SHIPPING_FEE } from "@/lib/types";
 import {
@@ -16,6 +17,9 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   storeSlug: z.string().min(1),
+  // Fiziki stendin kodu. Verilibsə mağaza BUNDAN təyin olunur —
+  // stend hansı mağazaya bağlıdırsa sifariş ora yazılır.
+  qrCode: z.string().nullable().optional(),
   phoneModelId: z.string().min(1),
   uploadedImage: z.string().nullable().optional(),
   designImage: z.string().nullable().optional(),
@@ -57,9 +61,30 @@ export async function POST(req: Request) {
   const data = parsed.data;
 
   // --- Serverdə doğrulama və qiymətlər (client-ə etibar edilmir) ---
-  const store = await prisma.store.findUnique({
-    where: { slug: data.storeSlug },
-  });
+  // QR kod verilibsə mağaza ondan təyin olunur — client-in göndərdiyi
+  // storeSlug-a etibar edilmir, əks halda sifariş başqa mağazaya yazıla bilər.
+  let qrCodeId: string | null = null;
+  let store: Awaited<ReturnType<typeof prisma.store.findUnique>> = null;
+
+  if (data.qrCode) {
+    const qr = await prisma.qrCode.findUnique({
+      where: { code: normalizeCode(data.qrCode) },
+      include: { store: true },
+    });
+    if (!qr || !qr.active || !qr.store) {
+      return NextResponse.json(
+        { error: "Bu stend hələ aktiv deyil." },
+        { status: 404 },
+      );
+    }
+    qrCodeId = qr.id;
+    store = qr.store;
+  } else {
+    store = await prisma.store.findUnique({
+      where: { slug: data.storeSlug },
+    });
+  }
+
   if (!store || !store.active) {
     return NextResponse.json({ error: "Mağaza tapılmadı." }, { status: 404 });
   }
@@ -137,6 +162,7 @@ export async function POST(req: Request) {
     data: {
       orderNumber,
       storeId: store.id,
+      qrCodeId,
       phoneModelId: phoneModel.id,
       uploadedImage: uploadedPath,
       designImage: designPath,

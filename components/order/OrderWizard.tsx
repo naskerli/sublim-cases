@@ -19,6 +19,8 @@ import { haversineKm } from "@/lib/geo";
 
 type Props = {
   store: StoreDTO;
+  // Sifarişin hansı fiziki stenddən gəldiyi (varsa)
+  qrCode?: string | null;
   phoneModels: PhoneModelDTO[];
   caseProduct: ProductDTO;
   addons: ProductDTO[];
@@ -94,6 +96,7 @@ const AI_STYLES = [
 
 export default function OrderWizard({
   store,
+  qrCode = null,
   phoneModels,
   caseProduct,
   addons,
@@ -221,6 +224,7 @@ export default function OrderWizard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           storeSlug: store.slug,
+          qrCode,
           phoneModelId: modelId,
           uploadedImage: photoSrc,
           designImage,

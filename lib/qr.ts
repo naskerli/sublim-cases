@@ -14,6 +14,11 @@ export function storeUrl(baseUrl: string, slug: string): string {
   return `${baseUrl}/s/${slug}`;
 }
 
+// Fiziki stenddəki QR kodun hədəfi.
+export function standUrl(baseUrl: string, code: string): string {
+  return `${baseUrl}/q/${code}`;
+}
+
 // Ekranda göstərmək üçün data URL (PNG, base64).
 export async function qrDataUrl(text: string): Promise<string> {
   return QRCode.toDataURL(text, {

@@ -28,8 +28,31 @@ model Store {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  orders  Order[]
+  users   User[]
+  qrCodes QrCode[]
+}
+
+// Fiziki stend üzərindəki QR kod.
+// Kodlar mağazadan ASILI OLMADAN, əvvəlcədən partiya ilə yaradılır və
+// stendlərə çap olunur. Mağaza ilə razılaşdıqda kod həmin mağazaya təyin
+// edilir. Müştəri /q/<code> ünvanına düşür.
+model QrCode {
+  id         String    @id @default(cuid())
+  // Stenddə çap olunan qısa kod (məs. "K7M2QP") — böyük hərflərlə saxlanılır
+  code       String    @unique
+  // Çap partiyası (məs. "2026-07-A") — toplu çap və izləmə üçün
+  batch      String?
+  note       String?
+  // Təyin olunmayıbsa null
+  store      Store?    @relation(fields: [storeId], references: [id])
+  storeId    String?
+  assignedAt DateTime?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   orders Order[]
-  users  User[]
 }
 
 // Panel istifadəçisi.
@@ -116,6 +139,11 @@ model Order {
   // Attribution — komissiya üçün hansı mağazadan gəldiyi
   store   Store  @relation(fields: [storeId], references: [id])
   storeId String
+
+  // Hansı fiziki stenddən gəldiyi. Stend sonradan başqa mağazaya keçsə belə
+  // bu sifarişin tarixçəsi pozulmur (storeId snapshot kimi qalır).
+  qrCode   QrCode? @relation(fields: [qrCodeId], references: [id])
+  qrCodeId String?
 
   phoneModel   PhoneModel @relation(fields: [phoneModelId], references: [id])
   phoneModelId String

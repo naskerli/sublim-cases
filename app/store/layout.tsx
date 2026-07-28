@@ -16,7 +16,7 @@ export default async function StoreLayout({
       badge={user.storeName}
       nav={[
         { href: "/store", label: "Sifarişlərim" },
-        { href: "/store/qr", label: "QR kodum" },
+        { href: "/store/qr", label: "Stendlərim" },
       ]}
     >
       {children}
