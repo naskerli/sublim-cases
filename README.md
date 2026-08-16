@@ -183,6 +183,78 @@ Vacib detallar:
 > sonra bunu «yalnız ödənişi təsdiqlənmiş sifarişlər» qaydasına keçirmək olar —
 > dəyişiklik tək yerdə, `lib/payouts.ts` → `payableWhere` içindədir.
 
+## Supabase proyektini köçürmək (başqa hesaba / yeni proyektə)
+
+Free planda hesab başına 2 aktiv proyekt olur. Proyekt dayandırılıbsa
+(*paused*) və ya başqa hesaba keçmək lazımdırsa, köçürmə iki hissədən
+ibarətdir — **baza** və **şəkillər**. İkisi ayrı yerdə saxlanılır, ona görə
+təkcə bazanı köçürmək kifayət etmir: `Order.uploadedImage` / `designImage`
+sahələri yalnız obyekt açarını (`design/uuid.jpg`) saxlayır, faylın özünü yox.
+
+### 0. Köhnə proyekti oxunan hala gətir
+
+Dayandırılmış proyektdən oxumaq olmur. Dashboard-da:
+
+- **Restore** — proyekti geri qaldırır. Free planda 2 aktiv limit var, ona
+  görə əvvəlcə digər proyektlərdən birini dayandırmaq lazım gələ bilər.
+- Alternativ: paused proyektin səhifəsindəki **Download backup** ilə ehtiyat
+  nüsxəni endirmək.
+
+### 1. Yeni proyekti hazırla
+
+Yeni hesabda proyekt aç, sonra sxemi qur:
+
+```bash
+DATABASE_URL="<yeni-pooler-6543>" \
+DIRECT_URL="<yeni-direct-5432>" \
+npx prisma migrate deploy
+```
+
+Bu, bütün cədvəlləri sıfırdan yaradır — sxemi əl ilə köçürmək lazım deyil.
+
+### 2. Bazanı köçür
+
+```bash
+SOURCE_DATABASE_URL="<köhnə-bağlantı>" \
+TARGET_DATABASE_URL="<yeni-bağlantı>" \
+npm run db:copy
+```
+
+`pg_dump` tələb etmir — Prisma ilə oxuyub yazır, cədvəl sırası foreign key
+asılılıqlarına görə düzülüb. **İdempotentdir**: mövcud sətirlər (eyni `id`)
+atlanır, ona görə yarımçıq qalsa təkrar işlətmək təhlükəsizdir.
+
+### 3. Şəkilləri köçür
+
+```bash
+SOURCE_SUPABASE_URL="https://<köhnə>.supabase.co" \
+SOURCE_SUPABASE_SECRET_KEY="sb_secret_..." \
+TARGET_SUPABASE_URL="https://<yeni>.supabase.co" \
+TARGET_SUPABASE_SECRET_KEY="sb_secret_..." \
+npm run storage:copy
+```
+
+Hədəfdə `order-images` bucket-i yoxdursa private olaraq yaradılır. Bu da
+idempotentdir — mövcud fayl yenidən yüklənmir.
+
+### 4. Railway dəyişənlərini yenilə
+
+`DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` —
+dördü də yeni proyektin dəyərləri ilə əvəzlənir, sonra redeploy.
+
+> Açarları və bağlantı sətirlərini yalnız Railway Variables-a yazın; kodda,
+> commit-də və ya çatda saxlamayın.
+
+### 5. Yoxla
+
+Panelə gir → sifariş siyahısında şəkillər görünürsə həm baza, həm storage
+düzgün köçüb.
+
+**Alternativ:** köhnə bazada yalnız test məlumatı varsa köçürməyə ehtiyac
+yoxdur — yeni proyektin dəyişənlərini Railway-ə yazmaq kifayətdir. `npm start`
+konteyner qalxarkən `prisma migrate deploy` + seed işlədir, sxem və nümunə
+məlumat avtomatik qurulur.
+
 ## Növbəti mərhələlər (roadmap)
 
 - Canvas mockup → **generativ AI** render (fotorealistik).
