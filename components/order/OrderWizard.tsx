@@ -732,7 +732,7 @@ export default function OrderWizard({
                   </div>
                 </div>
 
-                {/* Ölçü · üfüqi (+ mərkəz) · şaquli */}
+                {/* Ölçü · şaquli mövqe (üfüqi həmişə mərkəzdədir) */}
                 <div className="flex items-center gap-2">
                   <div className="flex flex-1 items-center gap-1.5">
                     <span className="shrink-0 text-xs text-gray-500">
@@ -752,32 +752,6 @@ export default function OrderWizard({
                       }
                       className="w-full min-w-0 accent-indigo-600"
                     />
-                  </div>
-
-                  <span className="h-6 w-px shrink-0 bg-gray-200" />
-
-                  <div className="flex flex-1 items-center gap-1">
-                    <span className="shrink-0 text-sm text-gray-500">↔</span>
-                    <input
-                      type="range"
-                      min={0.1}
-                      max={0.9}
-                      step={0.01}
-                      value={text.x}
-                      onChange={(e) =>
-                        setText((t) => ({
-                          ...t,
-                          x: parseFloat(e.target.value),
-                        }))
-                      }
-                      className="w-full min-w-0 accent-indigo-600"
-                    />
-                    <button
-                      onClick={() => setText((t) => ({ ...t, x: 0.5 }))}
-                      className="shrink-0 rounded-md border border-gray-300 px-1.5 py-0.5 text-[9px] font-medium text-gray-600 active:bg-gray-50"
-                    >
-                      Mərkəz
-                    </button>
                   </div>
 
                   <span className="h-6 w-px shrink-0 bg-gray-200" />
