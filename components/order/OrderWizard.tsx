@@ -570,7 +570,7 @@ export default function OrderWizard({
           </div>
 
           {/* Tab məzmunu — hündürlük sabitdir ki, layout tərpənməsin */}
-          <div className="mt-3 h-[212px] overflow-y-auto sm:h-[226px]">
+          <div className="mt-3 h-[188px] overflow-y-auto sm:h-[202px]">
             {designTab === 0 && (
               <div>
                 <div className="grid grid-cols-3 gap-2">
@@ -634,35 +634,23 @@ export default function OrderWizard({
 
             {designTab === 2 && (
               <div className="space-y-2.5 pt-1">
-                <textarea
-                  value={text.text}
-                  onChange={(e) =>
-                    setText((t) => ({ ...t, text: e.target.value }))
-                  }
-                  placeholder="Məsələn: adın, tarix, şüar…"
-                  rows={2}
-                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
+                {/* Mətn + font */}
                 <div className="flex items-center gap-2">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setText((t) => ({ ...t, color: c }))}
-                      className={`h-7 w-7 shrink-0 rounded-full border-2 ${
-                        text.color === c
-                          ? "border-indigo-500"
-                          : "border-gray-200"
-                      }`}
-                      style={{ background: c }}
-                      aria-label={c}
-                    />
-                  ))}
+                  <input
+                    type="text"
+                    value={text.text}
+                    onChange={(e) =>
+                      setText((t) => ({ ...t, text: e.target.value }))
+                    }
+                    placeholder="Məsələn: adın, tarix, şüar…"
+                    className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  />
                   <select
                     value={text.font}
                     onChange={(e) =>
                       setText((t) => ({ ...t, font: e.target.value }))
                     }
-                    className="ml-auto min-w-0 flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+                    className="w-28 shrink-0 rounded-lg border border-gray-300 px-2 py-2 text-xs"
                   >
                     {FONTS.map((f) => (
                       <option key={f.value} value={f.value}>
@@ -671,37 +659,27 @@ export default function OrderWizard({
                     ))}
                   </select>
                 </div>
-                <RangeRow
-                  label="Ölçü"
-                  min={20}
-                  max={80}
-                  step={1}
-                  value={text.size}
-                  onChange={(v) => setText((t) => ({ ...t, size: v }))}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <RangeRow
-                    label="↔"
-                    min={0.1}
-                    max={0.9}
-                    step={0.01}
-                    value={text.x}
-                    onChange={(v) => setText((t) => ({ ...t, x: v }))}
-                    compact
-                  />
-                  <RangeRow
-                    label="↕"
-                    min={0.1}
-                    max={0.95}
-                    step={0.01}
-                    value={text.y}
-                    onChange={(v) => setText((t) => ({ ...t, y: v }))}
-                    compact
-                  />
-                </div>
 
-                {/* Fon və çərçivə */}
-                <div className="flex items-center gap-2">
+                {/* Rənglər · fon tərzi · fon rəngi/çərçivə */}
+                <div className="flex items-center gap-1.5 overflow-x-auto">
+                  <div className="flex shrink-0 items-center gap-1">
+                    {COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setText((t) => ({ ...t, color: c }))}
+                        className={`h-5 w-5 shrink-0 rounded-full border-2 ${
+                          text.color === c
+                            ? "border-indigo-500"
+                            : "border-gray-200"
+                        }`}
+                        style={{ background: c }}
+                        aria-label={c}
+                      />
+                    ))}
+                  </div>
+
+                  <span className="h-5 w-px shrink-0 bg-gray-200" />
+
                   <div className="flex shrink-0 rounded-lg bg-gray-100 p-0.5">
                     {TEXT_BACKGROUNDS.map((b) => (
                       <button
@@ -709,7 +687,7 @@ export default function OrderWizard({
                         onClick={() =>
                           setText((t) => ({ ...t, bg: b.value }))
                         }
-                        className={`rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                        className={`rounded-md px-1.5 py-1 text-[10px] font-semibold transition-colors ${
                           text.bg === b.value
                             ? "bg-white text-indigo-600 shadow-sm"
                             : "text-gray-500"
@@ -720,39 +698,107 @@ export default function OrderWizard({
                     ))}
                   </div>
 
-                  {/* Fon rəngi — yalnız fon aktivdirsə */}
-                  {text.bg !== "none" && (
-                    <div className="flex items-center gap-1.5">
-                      {BG_COLORS.map((c) => (
-                        <button
-                          key={c}
-                          onClick={() =>
-                            setText((t) => ({ ...t, bgColor: c }))
-                          }
-                          className={`h-6 w-6 shrink-0 rounded-full border-2 ${
-                            text.bgColor === c
-                              ? "border-indigo-500"
-                              : "border-gray-200"
-                          }`}
-                          style={{ background: c }}
-                          aria-label={`Fon rəngi ${c}`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <span className="h-5 w-px shrink-0 bg-gray-200" />
 
-                  <button
-                    onClick={() =>
-                      setText((t) => ({ ...t, border: !t.border }))
-                    }
-                    className={`ml-auto shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
-                      text.border
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                        : "border-gray-300 text-gray-500"
-                    }`}
-                  >
-                    Çərçivə
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {BG_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setText((t) => ({ ...t, bgColor: c }))}
+                        disabled={text.bg === "none"}
+                        className={`h-5 w-5 shrink-0 rounded-full border-2 disabled:opacity-30 ${
+                          text.bgColor === c
+                            ? "border-indigo-500"
+                            : "border-gray-200"
+                        }`}
+                        style={{ background: c }}
+                        aria-label={`Fon rəngi ${c}`}
+                      />
+                    ))}
+                    <button
+                      onClick={() =>
+                        setText((t) => ({ ...t, border: !t.border }))
+                      }
+                      title="Çərçivə"
+                      aria-label="Çərçivə"
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold transition-colors ${
+                        text.border
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                          : "border-gray-300 text-gray-400"
+                      }`}
+                    >
+                      ▢
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ölçü · üfüqi (+ mərkəz) · şaquli */}
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-1 items-center gap-1.5">
+                    <span className="shrink-0 text-xs text-gray-500">
+                      Ölçü
+                    </span>
+                    <input
+                      type="range"
+                      min={20}
+                      max={80}
+                      step={1}
+                      value={text.size}
+                      onChange={(e) =>
+                        setText((t) => ({
+                          ...t,
+                          size: parseFloat(e.target.value),
+                        }))
+                      }
+                      className="w-full min-w-0 accent-indigo-600"
+                    />
+                  </div>
+
+                  <span className="h-6 w-px shrink-0 bg-gray-200" />
+
+                  <div className="flex flex-1 items-center gap-1">
+                    <span className="shrink-0 text-sm text-gray-500">↔</span>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={0.9}
+                      step={0.01}
+                      value={text.x}
+                      onChange={(e) =>
+                        setText((t) => ({
+                          ...t,
+                          x: parseFloat(e.target.value),
+                        }))
+                      }
+                      className="w-full min-w-0 accent-indigo-600"
+                    />
+                    <button
+                      onClick={() => setText((t) => ({ ...t, x: 0.5 }))}
+                      className="shrink-0 rounded-md border border-gray-300 px-1.5 py-0.5 text-[9px] font-medium text-gray-600 active:bg-gray-50"
+                    >
+                      Mərkəz
+                    </button>
+                  </div>
+
+                  <span className="h-6 w-px shrink-0 bg-gray-200" />
+
+                  <div className="flex flex-1 items-center gap-1.5">
+                    <span className="shrink-0 text-sm text-gray-500">↕</span>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={0.95}
+                      step={0.01}
+                      value={text.y}
+                      onChange={(e) =>
+                        setText((t) => ({
+                          ...t,
+                          y: parseFloat(e.target.value),
+                        }))
+                      }
+                      className="w-full min-w-0 accent-indigo-600"
+                    />
+                  </div>
                 </div>
               </div>
             )}
