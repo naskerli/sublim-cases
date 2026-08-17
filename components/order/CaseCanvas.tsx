@@ -322,15 +322,18 @@ function drawCamera(ctx: CanvasRenderingContext2D, shape: CaseShape) {
     // Redmi Note 14/15 (Pro) — kompakt "squircle" modul, 2 funksional lens
     // + dərinlik sensoru (bəzi modellərdə "3-cü lens" faktiki dərinlikdir).
     case "redmi-squircle-3": {
-      const x = mm(6.5);
-      const y = mm(7);
-      const size = mm(32);
-      moduleBase(ctx, x, y, size, size, mm(11));
-      const r = mm(7.2);
-      lens(ctx, x + mm(11), y + mm(11), r);
-      lens(ctx, x + mm(23), y + mm(11), r);
-      dot(ctx, x + mm(11), y + mm(23), mm(3.6), "rgba(25,28,35,0.9)");
-      dot(ctx, x + mm(23), y + mm(23), mm(3.2), "rgba(255,240,205,0.9)");
+      // Üç əsl lens L-formada: yuxarı-sol (böyük), yuxarı-sağ (kiçik),
+      // aşağı-sol (böyük) + flaş aşağı-sağda.
+      const x = mm(6);
+      const y = mm(6.5);
+      const size = mm(36);
+      moduleBase(ctx, x, y, size, size, mm(12));
+      const rBig = mm(7.5);
+      const rSmall = mm(6.3);
+      lens(ctx, x + mm(12), y + mm(12), rBig);
+      lens(ctx, x + mm(26), y + mm(12), rSmall);
+      lens(ctx, x + mm(12), y + mm(26), rBig);
+      dot(ctx, x + mm(26), y + mm(26), mm(3), "rgba(255,240,205,0.9)");
       break;
     }
   }
