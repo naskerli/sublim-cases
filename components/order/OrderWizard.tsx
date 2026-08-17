@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CaseCanvas,
   type CaseCanvasHandle,
+  type OutpaintParams,
   type PhotoTransform,
   type TextOptions,
 } from "./CaseCanvas";
@@ -131,6 +132,42 @@ export default function OrderWizard({
 
   // Dizayn addımının aktiv tabı (0: tərz, 1: yerləşdir, 2: yazı)
   const [designTab, setDesignTab] = useState(0);
+
+  // Foto sürüşdürülüb kənarda boşluq qalanda AI ilə tamamlama seçimi
+  const [gapParams, setGapParams] = useState<OutpaintParams | null>(null);
+  const [outpainting, setOutpainting] = useState(false);
+  const [outpaintError, setOutpaintError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setGapParams(canvasRef.current?.getOutpaintParams() ?? null);
+    }, 50);
+    return () => clearTimeout(t);
+  }, [transform, photoSrc]);
+
+  async function handleOutpaint() {
+    if (!gapParams) return;
+    setOutpainting(true);
+    setOutpaintError(null);
+    try {
+      const res = await fetch("/api/design/outpaint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(gapParams),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Naməlum xəta.");
+      setPhotoSrc(data.dataUrl);
+      setTransform({ scale: 1, offsetX: 0, offsetY: 0 });
+      setGapParams(null);
+    } catch (e) {
+      setOutpaintError(
+        e instanceof Error ? e.message : "AI tamamlama alınmadı.",
+      );
+    } finally {
+      setOutpainting(false);
+    }
+  }
 
   // Step 3
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
@@ -629,6 +666,28 @@ export default function OrderWizard({
                 >
                   Sıfırla
                 </button>
+
+                {/* Şəklin kənarında boşluq varsa AI ilə tamamlama təklifi */}
+                {gapParams && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+                    <p className="text-[11px] leading-snug text-amber-800">
+                      Şəklin kənarında boşluq yarandı — kamera bölgəsində
+                      görünə bilər.
+                    </p>
+                    <button
+                      onClick={handleOutpaint}
+                      disabled={outpainting}
+                      className="mt-1.5 w-full rounded-lg bg-amber-600 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60"
+                    >
+                      {outpainting ? "Tamamlanır…" : "✨ AI ilə tamamla"}
+                    </button>
+                    {outpaintError && (
+                      <p className="mt-1.5 text-[10px] text-red-600">
+                        {outpaintError}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

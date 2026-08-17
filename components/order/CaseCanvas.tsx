@@ -48,9 +48,29 @@ export type PhotoTransform = {
   offsetY: number;
 };
 
+// Foto sürüşdürülüb/kiçildiləndə kabronun kənarında boşluq qalırsa,
+// AI outpaint sorğusu üçün lazım olan parametrlər (orijinal şəkil
+// piksel fəzasında — Segmind kimi API-lər orijinal şəkli və onun
+// daha böyük "hədəf" kətan üzərindəki mövqeyini gözləyir).
+export type OutpaintParams = {
+  imageDataUrl: string; // orijinal şəkil (lazım gələrsə kiçildilmiş)
+  targetWidth: number;
+  targetHeight: number;
+  offsetX: number;
+  offsetY: number;
+};
+
 export type CaseCanvasHandle = {
   toDataURL: () => string | null;
+  // Kənarda boşluq yoxdursa (və ya şəkil hələ yüklənməyibsə) null qaytarır.
+  getOutpaintParams: () => OutpaintParams | null;
 };
+
+// Segmind sd1.5-outpaint modelinin praktik rezolyusiya həddi —
+// bundan böyük göndərmək yavaş/bahalı olur, ona görə mütənasib kiçildilir.
+const MAX_OUTPAINT_DIM = 1024;
+// SD modelləri adətən 8-in qatı ölçüləri gözləyir.
+const roundTo8 = (v: number) => Math.round(v / 8) * 8;
 
 type Props = {
   shape: CaseShape;
@@ -434,6 +454,64 @@ export const CaseCanvas = forwardRef<CaseCanvasHandle, Props>(
       toDataURL: () => {
         draw();
         return canvasRef.current?.toDataURL("image/jpeg", 0.9) ?? null;
+      },
+
+      getOutpaintParams: () => {
+        const img = imgRef.current;
+        if (!img || !img.complete || img.naturalWidth === 0) return null;
+
+        const k = PX_PER_MM * SCALE;
+        const W = shape.wMm * k;
+        const H = shape.hMm * k;
+
+        const coverScale =
+          Math.max(W / img.naturalWidth, H / img.naturalHeight) *
+          Math.max(0.2, transform.scale);
+        const dw = img.naturalWidth * coverScale;
+        const dh = img.naturalHeight * coverScale;
+        const dx = (W - dw) / 2 + transform.offsetX * (dw - W) * 0.5;
+        const dy = (H - dh) / 2 + transform.offsetY * (dh - H) * 0.5;
+
+        // Kənarların hər hansı birində 1px-dən çox boşluq varsa
+        const EPS = 1;
+        const hasGap =
+          dx > EPS || dy > EPS || dx + dw < W - EPS || dy + dh < H - EPS;
+        if (!hasGap) return null;
+
+        // Orijinal şəkil fəzasında hədəf kətan ölçüsü və şəklin ofseti
+        let targetW = W / coverScale;
+        let targetH = H / coverScale;
+        let offsetX = Math.max(0, dx / coverScale);
+        let offsetY = Math.max(0, dy / coverScale);
+
+        // Praktik rezolyusiya həddinə mütənasib kiçiltmə
+        const longSide = Math.max(targetW, targetH);
+        const clamp =
+          longSide > MAX_OUTPAINT_DIM ? MAX_OUTPAINT_DIM / longSide : 1;
+
+        targetW = roundTo8(targetW * clamp);
+        targetH = roundTo8(targetH * clamp);
+        offsetX = roundTo8(offsetX * clamp);
+        offsetY = roundTo8(offsetY * clamp);
+
+        // Göndərilən şəkil eyni əmsalla kiçildilir ki, offset/hədəflə uyğun qalsın
+        const sendW = Math.max(8, roundTo8(img.naturalWidth * clamp));
+        const sendH = Math.max(8, roundTo8(img.naturalHeight * clamp));
+
+        const off = document.createElement("canvas");
+        off.width = sendW;
+        off.height = sendH;
+        const octx = off.getContext("2d");
+        if (!octx) return null;
+        octx.drawImage(img, 0, 0, sendW, sendH);
+
+        return {
+          imageDataUrl: off.toDataURL("image/jpeg", 0.9),
+          targetWidth: targetW,
+          targetHeight: targetH,
+          offsetX,
+          offsetY,
+        };
       },
     }));
 
