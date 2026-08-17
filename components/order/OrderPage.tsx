@@ -15,8 +15,12 @@ const CAMERA_LAYOUTS: CameraLayout[] = [
   "ios-pill-2",
   "ios-plateau-1",
   "ios-plateau-3",
+  "ios-square-3",
   "galaxy-island-3",
   "galaxy-ultra",
+  "galaxy-a-pill",
+  "xiaomi-square-3",
+  "redmi-squircle-3",
 ];
 
 function parseShape(printArea: string | null): CaseShape {

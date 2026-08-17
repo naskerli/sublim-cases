@@ -171,6 +171,109 @@ async function main() {
       slug: "galaxy-s26-ultra",
       shape: caseShape(78.1, 163.6, 11.0, "galaxy-ultra"),
     },
+    // --- Apple: köhnə Pro nəsilləri ---
+    // 15/16 Pro/Pro Max klassik kvadrat kamera modulunu paylaşır (17 Pro-nun
+    // tam enli platosundan fərqli). Ölçülər Apple-ın rəsmi çertyojlarından.
+    {
+      brand: "Apple",
+      name: "iPhone 16 Pro",
+      slug: "iphone-16-pro",
+      shape: caseShape(71.45, 149.61, 12.0, "ios-square-3"),
+    },
+    {
+      brand: "Apple",
+      name: "iPhone 16 Pro Max",
+      slug: "iphone-16-pro-max",
+      shape: caseShape(77.58, 163.03, 13.0, "ios-square-3"),
+    },
+    {
+      brand: "Apple",
+      name: "iPhone 15 Pro",
+      slug: "iphone-15-pro",
+      shape: caseShape(70.6, 146.61, 12.0, "ios-square-3"),
+    },
+    {
+      brand: "Apple",
+      name: "iPhone 15 Pro Max",
+      slug: "iphone-15-pro-max",
+      shape: caseShape(76.73, 159.86, 13.0, "ios-square-3"),
+    },
+    // --- Samsung: A-seriya ---
+    {
+      brand: "Samsung",
+      name: "Galaxy A37",
+      slug: "galaxy-a37",
+      shape: caseShape(78.2, 162.9, 10.5, "galaxy-a-pill"),
+    },
+    {
+      brand: "Samsung",
+      name: "Galaxy A57",
+      slug: "galaxy-a57",
+      shape: caseShape(76.8, 161.5, 10.5, "galaxy-a-pill"),
+    },
+    {
+      brand: "Samsung",
+      name: "Galaxy A36",
+      slug: "galaxy-a36",
+      shape: caseShape(78.2, 162.9, 10.5, "galaxy-a-pill"),
+    },
+    {
+      brand: "Samsung",
+      name: "Galaxy A56",
+      slug: "galaxy-a56",
+      shape: caseShape(77.5, 162.2, 10.5, "galaxy-a-pill"),
+    },
+    // --- Samsung: S25 (S26-dan əvvəlki nəsil, eyni kamera dilini paylaşır) ---
+    {
+      brand: "Samsung",
+      name: "Galaxy S25",
+      slug: "galaxy-s25",
+      shape: caseShape(75.8, 158.4, 10.5, "galaxy-island-3"),
+    },
+    {
+      brand: "Samsung",
+      name: "Galaxy S25 Ultra",
+      slug: "galaxy-s25-ultra",
+      shape: caseShape(77.6, 162.8, 11.0, "galaxy-ultra"),
+    },
+    // --- Xiaomi: Mi (flagship) seriyası ---
+    {
+      brand: "Xiaomi",
+      name: "Mi 15",
+      slug: "mi-15",
+      shape: caseShape(71.2, 152.3, 11.0, "xiaomi-square-3"),
+    },
+    {
+      brand: "Xiaomi",
+      name: "Mi 15 Pro",
+      slug: "mi-15-pro",
+      shape: caseShape(75.3, 161.3, 11.5, "xiaomi-square-3"),
+    },
+    // --- Xiaomi: Redmi Note seriyası ---
+    {
+      brand: "Xiaomi",
+      name: "Redmi Note 15",
+      slug: "redmi-note-15",
+      shape: caseShape(75.4, 164.0, 10.0, "redmi-squircle-3"),
+    },
+    {
+      brand: "Xiaomi",
+      name: "Redmi Note 15 Pro",
+      slug: "redmi-note-15-pro",
+      shape: caseShape(78.1, 163.6, 10.5, "redmi-squircle-3"),
+    },
+    {
+      brand: "Xiaomi",
+      name: "Redmi Note 14",
+      slug: "redmi-note-14",
+      shape: caseShape(75.7, 162.4, 10.0, "redmi-squircle-3"),
+    },
+    {
+      brand: "Xiaomi",
+      name: "Redmi Note 14 Pro",
+      slug: "redmi-note-14-pro",
+      shape: caseShape(74.4, 162.3, 10.0, "redmi-squircle-3"),
+    },
   ];
 
   let order = 0;

@@ -12,8 +12,12 @@ export type CameraLayout =
   | "ios-pill-2" // iPhone 17 — şaquli pill modul, 2 lens
   | "ios-plateau-1" // iPhone Air — tam enli plato, 1 lens
   | "ios-plateau-3" // iPhone 17 Pro / Pro Max — tam enli plato, 3 lens
-  | "galaxy-island-3" // Galaxy S26 — oval ada, 3 lens
-  | "galaxy-ultra"; // Galaxy S26 Ultra — ayrı-ayrı halqalar
+  | "ios-square-3" // iPhone 15/16 Pro/Pro Max — klassik kvadrat modul (tam enli plato deyil)
+  | "galaxy-island-3" // Galaxy S25/S26 — oval ada, 3 lens
+  | "galaxy-ultra" // Galaxy S25/S26 Ultra — ayrı-ayrı halqalar
+  | "galaxy-a-pill" // Galaxy A36/A56/A37/A57 — dar şaquli pill, 3 lens
+  | "xiaomi-square-3" // Mi 15/15 Pro — böyük kvadrat modul, fərdi halqalar
+  | "redmi-squircle-3"; // Redmi Note 14/15 (Pro) — kompakt "squircle" modul
 
 // Korpusun REAL fiziki ölçüləri (mm). Canvas bu nisbətlərə görə çəkilir,
 // yəni Pro Max həqiqətən iPhone 17-dən böyük görünür.
@@ -259,6 +263,74 @@ function drawCamera(ctx: CanvasRenderingContext2D, shape: CaseShape) {
       const ox = x + w + mm(9.5);
       lens(ctx, ox, y + mm(14), mm(4.6));
       dot(ctx, ox, y + mm(27), mm(2.7), "rgba(255,240,205,0.9)");
+      break;
+    }
+
+    // iPhone 15/16 Pro/Pro Max — klassik kvadrat modul (17 Pro-nun tam enli
+    // platosundan fərqli olaraq korpusun eninə uzanmır). Ölçülər Apple-ın
+    // rəsmi ölçü çertyojlarından: modul ~38mm, lens diametri 16.2mm.
+    case "ios-square-3": {
+      const x = mm(5.5);
+      const y = mm(6.5);
+      const size = mm(38);
+      moduleBase(ctx, x, y, size, size, mm(13));
+      const r = mm(8.1);
+      const cx1 = x + mm(13);
+      const cx2 = x + mm(28);
+      const cyMid = y + size / 2;
+      lens(ctx, cx1, y + mm(12), r);
+      lens(ctx, cx1, y + mm(28), r);
+      lens(ctx, cx2, cyMid, r);
+      // LiDAR + flaş qalan küncdə
+      dot(ctx, x + size - mm(7), y + mm(7), mm(3), "rgba(20,20,25,0.9)");
+      dot(ctx, x + size - mm(7), y + size - mm(8), mm(3.2), "rgba(255,240,205,0.9)");
+      break;
+    }
+
+    // Galaxy A36/A56/A37/A57 — dar şaquli pill, 3 lens bir modulda
+    // birləşdirilib (S-seriyadan fərqli, daha kompakt).
+    case "galaxy-a-pill": {
+      const w = mm(20);
+      const x = mm(9);
+      const y = mm(9);
+      const h = mm(48);
+      moduleBase(ctx, x, y, w, h, w / 2);
+      const r = mm(6.8);
+      const cx = x + w / 2;
+      lens(ctx, cx, y + mm(10), r);
+      lens(ctx, cx, y + mm(24), r);
+      lens(ctx, cx, y + mm(38), r);
+      dot(ctx, x + w + mm(6), y + mm(10), mm(2.2), "rgba(255,240,205,0.9)");
+      break;
+    }
+
+    // Mi 15 / Mi 15 Pro — Xiaomi-nin böyük kvadrat modulu, hər lens öz
+    // fərdi çıxıntısında (L-formalı düzülüş).
+    case "xiaomi-square-3": {
+      const x = mm(7);
+      const y = mm(7);
+      const size = mm(42);
+      moduleBase(ctx, x, y, size, size, mm(14));
+      const r = mm(9.5);
+      lens(ctx, x + mm(13), y + mm(13), r);
+      lens(ctx, x + mm(29), y + mm(13), r);
+      lens(ctx, x + mm(13), y + mm(29), r);
+      dot(ctx, x + mm(29), y + mm(29), mm(3.5), "rgba(255,240,205,0.9)");
+      break;
+    }
+
+    // Redmi Note 14/15 (Pro) — kompakt "squircle" modul, 2 funksional lens
+    // + dərinlik sensoru (bəzi modellərdə "3-cü lens" faktiki dərinlikdir).
+    case "redmi-squircle-3": {
+      const x = mm(6.5);
+      const y = mm(7);
+      const size = mm(32);
+      moduleBase(ctx, x, y, size, size, mm(11));
+      const r = mm(7.2);
+      lens(ctx, x + mm(11), y + mm(11), r);
+      lens(ctx, x + mm(23), y + mm(11), r);
+      dot(ctx, x + mm(11), y + mm(23), mm(3.6), "rgba(25,28,35,0.9)");
+      dot(ctx, x + mm(23), y + mm(23), mm(3.2), "rgba(255,240,205,0.9)");
       break;
     }
   }
